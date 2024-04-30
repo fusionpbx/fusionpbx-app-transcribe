@@ -239,7 +239,7 @@ if (!class_exists('transcribe_watson')) {
 				return '';
 			}
 			else {
-				return "Your message has been transcribed by watson:  ".$this->message;
+				return $this->message;
 			}
 
 		}
