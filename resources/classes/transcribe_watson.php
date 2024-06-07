@@ -153,7 +153,9 @@ if (!class_exists('transcribe_watson')) {
 			}
 
 			//start output buffer
-			ob_start();
+			//ob_start();
+
+			//open standard output
 			$out = fopen('php://output', 'w');
 
 			// initialize a curl handle
@@ -203,6 +205,8 @@ if (!class_exists('transcribe_watson')) {
 
 			//show the debug information
 			fclose($out);
+
+			//save the buffer
 			//$this->debug = ob_get_clean();
 
 			// run the curl request and transcription message
