@@ -168,11 +168,17 @@ if (!class_exists('transcribe_google')) {
 			$out = fopen('php://output', 'w');
 
 			// version 1
-			if (substr($this->api_url, 0, 32) == 'https://speech.googleapis.com/v1') {
+			if (trim($this->api_url) == 'https://speech.googleapis.com/v1p1beta1/speech') {
 				if (isset($this->api_key) && $this->api_key != '') {
+
+					//get the length of the audio file
+					$audio_length = (float)system("soxi -D ".$this->path."/".$this->filename);
+
 					// Convert audio file to FLAC format
-					$flac_file = $file_path . '/' . $file_name . '.flac';
-					exec("sox $file_path/$file_name $flac_file trim 0 00:59");
+					$flac_file = $this->path . '/' . $this->filename . '.flac';
+					$command = "sox ".$this->path."/".$this->filename." ".$flac_file;
+					if ($audio_length > 59) { $command .= " trim 0 00:59"; }
+					exec($command);
 
 					// Base64 encode FLAC file
 					$flac_base64 = base64_encode(file_get_contents($flac_file));
