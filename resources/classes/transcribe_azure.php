@@ -156,7 +156,7 @@ if (!class_exists('transcribe_azure')) {
 			ob_start();
 			$out = fopen('php://output', 'w');
 
-			if (isset($api_key) && $api_key != '') {
+			if (isset($this->api_key) && $this->api_key != '') {
 
 				$url = "https://" . $this->api_url . ".api.cognitive.microsoft.com/sts/v1.0/issueToken";
 				$headers = [
@@ -189,7 +189,7 @@ if (!class_exists('transcribe_azure')) {
 				}
 				else {
 					$url = "https://" . $this->api_url . ".stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=" . $this->language . "&format=detailed";
-					$file_path = $file_path . '/' . $file_name;
+					$file_path = $this->path . '/' . $this->filename;
 					$headers = [
 						"Authorization: Bearer " . $access_token,
 						"Content-type: audio/wav; codec=\"audio/pcm\"; samplerate=8000; trustsourcerate=false"
