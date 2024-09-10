@@ -152,6 +152,27 @@ if (!class_exists('transcribe_openai')) {
 		 * transcribe - speech to text
 		 */
 		public function transcribe() : string {
+
+			// Use the curl command line for debuging
+			//echo "/usr/bin/curl --request POST ";
+			//echo " --url 'https://api.openai.com/v1/audio/transcriptions' ";
+			//echo " --header 'Authorization: Bearer ".$this->api_key."' ";
+			//echo " --header 'Content-Type: multipart/form-data' ";
+			//echo " --form 'file=@".$this->path.'/'.$this->filename."' ";
+			//echo " --form 'model=whisper-1' ";
+			//echo " --form 'response_format=text' ";
+			//echo "\n";
+
+			//return false if the file is not found
+			if (!file_exists($this->path.'/'.$this->filename)) {
+				echo "file not found\n";
+				return false;
+			}
+
+			//start output buffer
+			ob_start();
+			$out = fopen('php://output', 'w');
+
 			// initialize a curl handle
 			$ch = curl_init();
 
@@ -176,8 +197,28 @@ if (!class_exists('transcribe_openai')) {
 			// return the response as a string instead of outputting it directly
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
+			// set the connection timeout and the overall maximum curl run time
+			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+
+			// follow any "Location: " header the server sends as part of the HTTP header.
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+
+			// automatically set the Referer: field in requests where it follows a Location: redirect.
+			curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
+
+			// set whether to verify SSL peer
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, TRUE);
+
+			// add verbose for debugging
+			curl_setopt($ch, CURLOPT_VERBOSE, true);
+			curl_setopt($ch, CURLOPT_STDERR, $out);
+
 			// run the curl request and transcription message
 			$this->message = curl_exec($ch);
+
+			// show the debug information
+			fclose($out);
 
 			// check for errors
 			if (curl_errno($ch)) {
