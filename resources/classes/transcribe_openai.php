@@ -15,6 +15,8 @@ if (!class_exists('transcribe_openai')) {
 		private $api_key;
 		private $path;
 		private $filename;
+		private $audio_string;
+		private $audio_mime_type;
 		private $format;
 		private $voice;
 		private $message;
@@ -36,6 +38,14 @@ if (!class_exists('transcribe_openai')) {
 
 		public function set_filename(string $audio_filename) {
 			$this->filename = $audio_filename;
+		}
+
+		public function set_audio_string(string $audio_string) {
+			$this->audio_string = $audio_string;
+		}
+
+		public function set_audio_mime_type(string $audio_mime_type) {
+			$this->audio_mime_type = $audio_mime_type;
 		}
 
 		public function set_format(string $audio_format) {
@@ -163,12 +173,6 @@ if (!class_exists('transcribe_openai')) {
 			//echo " --form 'response_format=text' ";
 			//echo "\n";
 
-			//return false if the file is not found
-			if (!file_exists($this->path.'/'.$this->filename)) {
-				echo "file not found\n";
-				return false;
-			}
-
 			//start output buffer
 			ob_start();
 			$out = fopen('php://output', 'w');
@@ -188,8 +192,20 @@ if (!class_exists('transcribe_openai')) {
 				'Content-Type: multipart/form-data'
 			));
 
-			// set the POST data
-			$post_data['file'] = new CURLFile($this->path.'/'.$this->filename);
+			// prepare the HTTP POST data
+			if (file_exists($this->path.'/'.$this->filename)) {
+				//send the audio from the file system
+				$post_data['file'] = new CURLFile($this->path.'/'.$this->filename);
+			}
+			elseif (!empty($this->audio_string)) {
+				//send the audio from as a string
+				$post_data['file'] = new CURLStringFile($this->audio_string, $this->filename, $this->audio_mime_type);
+			}
+			else {
+				//audio file or string not found
+				return false;
+			}
+
 			$post_data['model'] = 'whisper-1';
 			$post_data['response_format'] = 'text';
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);

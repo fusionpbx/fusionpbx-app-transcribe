@@ -23,6 +23,8 @@ if (!class_exists('transcribe')) {
 
 		public $audio_path;
 		public $audio_filename;
+		public $audio_string;
+		public $audio_mime_type;
 		public $audio_format;
 		public $audio_model;
 		public $audio_voice;
@@ -55,6 +57,10 @@ if (!class_exists('transcribe')) {
 				//set the class interface to use the _template suffix
 				$classname = 'transcribe_'.$this->engine;
 
+				if (empty($this->audio_path)) {
+					$this->audio_path = null;
+				}
+
 				//create the object
 				$object = new $classname($this->settings);
 
@@ -63,6 +69,9 @@ if (!class_exists('transcribe')) {
 					if ($object->is_language_enabled() && !empty($this->audio_language)) {
 						$object->set_language($this->audio_language);
 					}
+					$object->set_audio_string($this->audio_string);
+echo "bbb audio_mime_type: ".$this->audio_mime_type."\n";
+					$object->set_audio_mime_type($this->audio_mime_type);
 					$object->set_path($this->audio_path);
 					$object->set_filename($this->audio_filename);
 					return $object->transcribe();

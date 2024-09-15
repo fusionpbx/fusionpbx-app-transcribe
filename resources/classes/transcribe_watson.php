@@ -17,6 +17,8 @@ if (!class_exists('transcribe_watson')) {
 		private $language;
 		private $path;
 		private $filename;
+		private $audio_string;
+		private $audio_mime_type;
 		private $format;
 		private $voice;
 		private $message;
@@ -40,6 +42,14 @@ if (!class_exists('transcribe_watson')) {
 
 		public function set_filename(string $audio_filename) {
 			$this->filename = $audio_filename;
+		}
+
+		public function set_audio_string(string $audio_string) {
+			$this->audio_string = $audio_string;
+		}
+
+		public function set_audio_mime_type(string $audio_mime_type) {
+			$this->audio_mime_type = $audio_mime_type;
 		}
 
 		public function set_format(string $audio_format) {
@@ -144,12 +154,17 @@ if (!class_exists('transcribe_watson')) {
 		public function transcribe() : string {
 
 			//get the content type
-			$path_array = pathinfo($this->path.'/'.$this->filename);
-			if ($path_array['extension'] == "mp3") {
-				$content_type = 'audio/mp3';
+			if (file_exists($this->path.'/'.$this->filename)) {
+				$path_array = pathinfo($this->path.'/'.$this->filename);
+				if ($path_array['extension'] == "mp3") {
+					$content_type = 'audio/mp3';
+				}
+				if ($path_array['extension'] == "wav") {
+					$content_type = 'audio/wav';
+				}
 			}
-			if ($path_array['extension'] == "wav") {
-				$content_type = 'audio/wav';
+			elseif (!empty($this->audio_string)) {
+				$content_type = $this->audio_mime_type;
 			}
 
 			//start output buffer
@@ -181,7 +196,20 @@ if (!class_exists('transcribe_watson')) {
 
 			//send the file as binary
 			curl_setopt($ch, CURLOPT_BINARYTRANSFER,TRUE);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents($this->path.'/'.$this->filename));
+
+			//prepare to send the file or audio
+			if (file_exists($this->path.'/'.$this->filename)) {
+				//send the audio from the file system
+				curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents($this->path.'/'.$this->filename));
+			}
+			elseif (!empty($this->audio_string)) {
+				//send the audio from as a string
+				curl_setopt($ch, CURLOPT_POSTFIELDS, $this->audio_string));
+			}
+			else {
+				//audio file or string not found
+				return false;
+			}
 
 			//set the connection timeout and the overall maximum curl run time
 			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20);

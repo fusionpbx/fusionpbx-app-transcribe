@@ -19,6 +19,8 @@ if (!class_exists('transcribe_google')) {
 		private $application_credentials;
 		private $path;
 		private $filename;
+		private $audio_string;
+		private $audio_mime_type;
 		private $format;
 		private $voice;
 		private $message;
@@ -44,6 +46,14 @@ if (!class_exists('transcribe_google')) {
 
 		public function set_filename(string $audio_filename) {
 			$this->filename = $audio_filename;
+		}
+
+		public function set_audio_string(string $audio_string) {
+			$this->audio_string = $audio_string;
+		}
+
+		public function set_audio_mime_type(string $audio_mime_type) {
+			$this->audio_mime_type = $audio_mime_type;
 		}
 
 		public function set_format(string $audio_format) {
@@ -155,12 +165,17 @@ if (!class_exists('transcribe_google')) {
 			}
 
 			// get the content type
-			$path_array = pathinfo($this->path.'/'.$this->filename);
-			if ($path_array['extension'] == "mp3") {
-				$content_type = 'audio/mp3';
+			if (file_exists($this->path.'/'.$this->filename)) {
+				$path_array = pathinfo($this->path.'/'.$this->filename);
+				if ($path_array['extension'] == "mp3") {
+					$content_type = 'audio/mp3';
+				}
+				if ($path_array['extension'] == "wav") {
+					$content_type = 'audio/wav';
+				}
 			}
-			if ($path_array['extension'] == "wav") {
-				$content_type = 'audio/wav';
+			elseif (!empty($this->audio_string)) {
+				$content_type = $this->audio_mime_type;
 			}
 
 			// start output buffer
@@ -170,6 +185,23 @@ if (!class_exists('transcribe_google')) {
 			// version 1
 			if (trim($this->api_url) == 'https://speech.googleapis.com/v1p1beta1/speech') {
 				if (isset($this->api_key) && $this->api_key != '') {
+					
+					if (file_exists($this->path.'/'.$this->filename)) {
+						//file has been found
+					}
+					elseif (!empty($this->audio_string)) {
+						//if this is empty then use the temp directory
+						if (empty($this->path)) {
+							$this->path = sys_get_temp_dir();
+						}
+
+						//save the audio string on the file system
+						file_put_contents($this->path.'/'.$this->filename, $this->audio_string);
+					}
+					else {
+						//audio file or string not found
+						return false;
+					}
 
 					//get the length of the audio file
 					$audio_length = (float)system("soxi -D ".$this->path."/".$this->filename);
@@ -238,8 +270,18 @@ if (!class_exists('transcribe_google')) {
 					putenv("GOOGLE_APPLICATION_CREDENTIALS=".$this->application_credentials);
 				}
 
-				// Base64 encode audio file
-				$audio_base64 = base64_encode(file_get_contents($this->file_path . '/' . $this->file_name));
+				// Base64 encode the audio
+				if (file_exists($this->path.'/'.$this->filename)) {
+					//file has been found
+					$audio_base64 = base64_encode(file_get_contents($this->file_path . '/' . $this->file_name));
+				}
+				elseif (!empty($this->audio_string)) {
+					$audio_base64 = base64_encode($this->audio_string);
+				}
+				else {
+					//audio file or string not found
+					return false;
+				}
 
 				// Prepare JSON data
 				$data = [
