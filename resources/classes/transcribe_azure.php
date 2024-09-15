@@ -185,10 +185,10 @@ if (!class_exists('transcribe_azure')) {
 
 				//set the request method to POST
 				curl_setopt($ch, CURLOPT_POST, true);
-				
+
 				//send the http headers
 				curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-				
+
 				//return the response as a string instead of outputting it directly
 				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
@@ -197,7 +197,7 @@ if (!class_exists('transcribe_azure')) {
 
 				//close the handle
 				curl_close($ch);
- 
+
 				//if a token was returned then use it to make the transcribe request
 				if (empty($access_token)) {
 					return false;
@@ -218,7 +218,7 @@ if (!class_exists('transcribe_azure')) {
 
 					//send the http headers
 					curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-					
+
 					//prepare to send the file or audio
 					if (file_exists($this->path.'/'.$this->filename)) {
 						//send the file using
@@ -226,7 +226,7 @@ if (!class_exists('transcribe_azure')) {
 					}
 					elseif (!empty($this->audio_string)) {
 						//send the audio from as a string
-						curl_setopt($ch, CURLOPT_POSTFIELDS, $this->audio_string));
+						curl_setopt($ch, CURLOPT_POSTFIELDS, $this->audio_string);
 					}
 					else {
 						//audio file or string not found

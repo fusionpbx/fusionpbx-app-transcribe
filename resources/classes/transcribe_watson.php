@@ -204,7 +204,7 @@ if (!class_exists('transcribe_watson')) {
 			}
 			elseif (!empty($this->audio_string)) {
 				//send the audio from as a string
-				curl_setopt($ch, CURLOPT_POSTFIELDS, $this->audio_string));
+				curl_setopt($ch, CURLOPT_POSTFIELDS, $this->audio_string);
 			}
 			else {
 				//audio file or string not found
