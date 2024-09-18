@@ -13,6 +13,7 @@ if (!class_exists('transcribe_openai')) {
 		 * declare private variables
 		 */
 		private $api_key;
+		private $api_url;
 		private $path;
 		private $filename;
 		private $audio_string;
@@ -29,6 +30,7 @@ if (!class_exists('transcribe_openai')) {
 
 			//build the setting object and get the recording path
 			$this->api_key = $settings->get('transcribe', 'api_key');
+			$this->api_url = $settings->get('transcribe', 'api_url', 'https://api.openai.com/v1/audio/transcriptions');
 
 		}
 
@@ -181,7 +183,7 @@ if (!class_exists('transcribe_openai')) {
 			$ch = curl_init();
 
 			// set the URL for the request
-			curl_setopt($ch, CURLOPT_URL, 'https://api.openai.com/v1/audio/transcriptions');
+			curl_setopt($ch, CURLOPT_URL, $this->api_url);
 
 			// set the request method to POST
 			curl_setopt($ch, CURLOPT_POST, true);
