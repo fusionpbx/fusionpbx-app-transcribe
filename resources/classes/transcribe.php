@@ -69,9 +69,12 @@ if (!class_exists('transcribe')) {
 					if ($object->is_language_enabled() && !empty($this->audio_language)) {
 						$object->set_language($this->audio_language);
 					}
-					$object->set_audio_string($this->audio_string);
-echo "bbb audio_mime_type: ".$this->audio_mime_type."\n";
-					$object->set_audio_mime_type($this->audio_mime_type);
+					if (!empty($this->audio_string)) {
+						$object->set_audio_string($this->audio_string);
+					}
+					if (!empty($this->audio_mime_type)) {
+						$object->set_audio_mime_type($this->audio_mime_type);
+					}
 					$object->set_path($this->audio_path);
 					$object->set_filename($this->audio_filename);
 					return $object->transcribe();
