@@ -14,6 +14,7 @@ if (!class_exists('transcribe_openai')) {
 		 */
 		private $api_key;
 		private $api_url;
+		private $api_model;
 		private $path;
 		private $filename;
 		private $audio_string;
@@ -29,8 +30,9 @@ if (!class_exists('transcribe_openai')) {
 		public function __construct($settings) {
 
 			//build the setting object and get the recording path
-			$this->api_key = $settings->get('transcribe', 'api_key');
-			$this->api_url = $settings->get('transcribe', 'api_url', 'https://api.openai.com/v1/audio/transcriptions');
+			$this->api_key = $settings->get('transcribe', 'api_key', '');
+			$this->api_url = $settings->get('transcribe', 'api_url', '');
+			$this->api_model = $settings->get('transcribe', 'api_model', 'whisper-1');
 
 		}
 
@@ -182,6 +184,11 @@ if (!class_exists('transcribe_openai')) {
 			// initialize a curl handle
 			$ch = curl_init();
 
+			// set the api_url if not already set
+			if (empty($this->api_url)) {
+				$this->api_url = 'https://api.openai.com/v1/audio/transcriptions';
+			}
+
 			// set the URL for the request
 			curl_setopt($ch, CURLOPT_URL, $this->api_url);
 
@@ -208,7 +215,7 @@ if (!class_exists('transcribe_openai')) {
 				return false;
 			}
 
-			$post_data['model'] = 'whisper-1';
+			$post_data['model'] = $this->api_model;
 			$post_data['response_format'] = 'text';
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
 
