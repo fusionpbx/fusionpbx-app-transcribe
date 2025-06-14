@@ -59,6 +59,11 @@ if (!class_exists('transcribe_local')) {
 			$this->message = $audio_message;
 		}
 
+		public function is_language_enabled() : bool {
+			//return the whether engine is handles languages
+			return false;
+		}
+
 		public function set_language(string $audio_language) {
 			$this->language = $audio_language;
 		}
