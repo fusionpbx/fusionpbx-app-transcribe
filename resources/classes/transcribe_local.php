@@ -2,12 +2,12 @@
 
 
  /**
- * transcribe_openai class
+ * transcribe_local class
  *
  * @method null download
  */
-if (!class_exists('transcribe_openai')) {
-	class transcribe_openai implements transcribe_interface {
+if (!class_exists('transcribe_local')) {
+	class transcribe_local implements transcribe_interface {
 
 		/**
 		 * declare private variables
@@ -20,9 +20,7 @@ if (!class_exists('transcribe_openai')) {
 		private $audio_string;
 		private $audio_mime_type;
 		private $format;
-		private $voice;
 		private $message;
-		private $model;
 		private $language;
 
 		/**
@@ -57,44 +55,12 @@ if (!class_exists('transcribe_openai')) {
 			$this->format = $audio_format;
 		}
 
-		public function set_voice(string $audio_voice) {
-			$this->voice = $audio_voice;
-		}
-
-		public function set_language(string $audio_language) {
-			$this->language = $audio_language;
-		}
-
-		public function set_translate(string $audio_translate) {
-			$this->translate = $audio_translate;
-		}
-
 		public function set_message(string $audio_message) {
 			$this->message = $audio_message;
 		}
 
-		public function is_language_enabled() : bool {
-			//return the whether engine is handles languages
-			return false;
-		}
-
-		public function is_translate_enabled() : bool {
-			//return the whether engine is able to translate
-			return false;
-		}
-
-		public function get_voices() : array {
-			$voices = array(
-				"alloy" => "alloy",
-				"echo" => "echo",
-				"fable" => "fable",
-				"nova" => "nova",
-				"onyx" => "onyx",
-				"shimmer" => "shimmer"
-			);
-
-			//return the languages array
-			return $voices;
+		public function set_language(string $audio_language) {
+			$this->language = $audio_language;
 		}
 
 		public function get_languages() : array {
@@ -170,7 +136,7 @@ if (!class_exists('transcribe_openai')) {
 
 			// Use the curl command line for debuging
 			//echo "/usr/bin/curl --request POST ";
-			//echo " --url 'https://api.openai.com/v1/audio/transcriptions' ";
+			//echo " --url 'http://127.0.0.1:8000/transcribe' ";
 			//echo " --header 'Authorization: Bearer ".$this->api_key."' ";
 			//echo " --header 'Content-Type: multipart/form-data' ";
 			//echo " --form 'file=@".$this->path.'/'.$this->filename."' ";
@@ -187,7 +153,7 @@ if (!class_exists('transcribe_openai')) {
 
 			// set the api_url if not already set
 			if (empty($this->api_url)) {
-				$this->api_url = 'https://api.openai.com/v1/audio/transcriptions';
+				$this->api_url = 'http://127.0.0.1:8000/transcribe';
 			}
 
 			// set the URL for the request
