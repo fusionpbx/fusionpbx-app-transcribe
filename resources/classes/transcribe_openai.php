@@ -21,6 +21,7 @@ class transcribe_openai implements transcribe_interface {
 	private $message;
 	private $model;
 	private $language;
+	private $translate;
 
 	/**
 	 * called when the object is created

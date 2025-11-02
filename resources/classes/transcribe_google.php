@@ -22,6 +22,7 @@ class transcribe_google implements transcribe_interface {
 	private $voice;
 	private $message;
 	private $model;
+	private $translate;
 
 	/**
 	 * called when the object is created
@@ -270,7 +271,7 @@ class transcribe_google implements transcribe_interface {
 			// Base64 encode the audio
 			if (file_exists($this->path.'/'.$this->filename)) {
 				//file has been found
-				$audio_base64 = base64_encode(file_get_contents($this->file_path . '/' . $this->file_name));
+				$audio_base64 = base64_encode(file_get_contents($this->path . '/' . $this->filename));
 			}
 			elseif (!empty($this->audio_string)) {
 				$audio_base64 = base64_encode($this->audio_string);

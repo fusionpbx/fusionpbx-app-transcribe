@@ -20,6 +20,7 @@ class transcribe_watson implements transcribe_interface {
 	private $voice;
 	private $message;
 	private $model;
+	private $translate;
 
 	/**
 	 * called when the object is created
