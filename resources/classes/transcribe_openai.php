@@ -206,8 +206,21 @@ class transcribe_openai implements transcribe_interface {
 			//send the audio from the file system
 			$post_data['file'] = new CURLFile($this->path.'/'.$this->filename);
 		}
+		elseif (!empty($this->audio_string) && version_compare(PHP_VERSION, '8.1.0', '<')) {
+			//get the temp directory
+			$temp_dir = sys_get_temp_dir();
+
+			//save the tremporary file to the temp directory
+			file_put_contents($temp_dir.'/'.$this->filename, $this->audio_string);
+
+			//send the audio from the file system
+			$post_data['file'] = new CURLFile($temp_dir.'/'.$this->filename);
+
+			//remove the temporary file
+			unlink($temp_dir.'/'.$this->filename);
+		}
 		elseif (!empty($this->audio_string)) {
-			//send the audio from as a string
+			//send the audio from as a string requires PHP 8.1 or higher
 			$post_data['file'] = new CURLStringFile($this->audio_string, $this->filename, $this->audio_mime_type);
 		}
 		else {
