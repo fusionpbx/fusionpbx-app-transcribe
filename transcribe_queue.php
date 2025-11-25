@@ -132,7 +132,7 @@
 
 //get the count
 	$sql = "select count(transcribe_queue_uuid) ";
-	$sql .= "from transcribe_queue ";
+	$sql .= "from v_transcribe_queue ";
 	if (permission_exists('transcribe_queue_all') && $show == 'all') {
 		$sql .= "where true ";
 	}
@@ -167,6 +167,8 @@
 //get the list
 	$sql = "select ";
 	$sql .= "transcribe_queue_uuid, ";
+	$sql .= "u.domain_uuid, ";
+	$sql .= "d.domain_name, ";
 	$sql .= "hostname, ";
 	$sql .= "transcribe_status, ";
 	$sql .= "transcribe_application_name, ";
@@ -176,7 +178,7 @@
 	$sql .= "transcribe_target_key_uuid, ";
 	$sql .= "transcribe_target_column_name, ";
 	$sql .= "transcribe_message ";
-	$sql .= "from transcribe_queue as u, v_domains as d ";
+	$sql .= "from v_transcribe_queue as u, v_domains as d ";
 	if (permission_exists('transcribe_queue_all') && $show == 'all') {
 		$sql .= "where true ";
 	}
@@ -214,9 +216,6 @@
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'><b>".$text['title-transcribe_queue']." (".$num_rows.")</b></div>\n";
 	echo "	<div class='actions'>\n";
-	if (permission_exists('transcribe_queue_add')) {
-		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$settings->get('theme', 'button_icon_add'),'id'=>'btn_add','name'=>'btn_add','link'=>'transcribe_queue_edit.php']);
-	}
 	if (permission_exists('transcribe_queue_add') && $transcribe_queue) {
 		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$settings->get('theme', 'button_icon_copy'),'id'=>'btn_copy','name'=>'btn_copy','style'=>'display:none;','onclick'=>"modal_open('modal-copy','btn_copy');"]);
 	}
@@ -254,7 +253,6 @@
 	if (permission_exists('transcribe_queue_delete') && $transcribe_queue) {
 		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
 	}
-
 
 	echo "<form id='form_list' method='post'>\n";
 	echo "<input type='hidden' id='action' name='action' value=''>\n";

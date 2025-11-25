@@ -68,6 +68,8 @@
 		$transcribe_status = $_POST["transcribe_status"];
 		$transcribe_application_name = $_POST["transcribe_application_name"];
 		$transcribe_application_uuid = $_POST["transcribe_application_uuid"];
+		$transcribe_audio_path = $_POST["transcribe_audio_path"];
+		$transcribe_audio_name = $_POST["transcribe_audio_name"];
 		$transcribe_target_table = $_POST["transcribe_target_table"];
 		$transcribe_target_key_name = $_POST["transcribe_target_key_name"];
 		$transcribe_target_key_uuid = $_POST["transcribe_target_key_uuid"];
@@ -125,6 +127,8 @@
 			if (strlen($transcribe_status) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_status']."<br>\n"; }
 			if (strlen($transcribe_application_name) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_application_name']."<br>\n"; }
 			if (strlen($transcribe_application_uuid) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_application_uuid']."<br>\n"; }
+			if (strlen($transcribe_audio_path) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_audio_path']."<br>\n"; }
+			if (strlen($transcribe_audio_name) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_audio_name']."<br>\n"; }
 			if (strlen($transcribe_target_table) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_target_table']."<br>\n"; }
 			if (strlen($transcribe_target_key_name) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_target_key_name']."<br>\n"; }
 			if (strlen($transcribe_target_key_uuid) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_target_key_uuid']."<br>\n"; }
@@ -155,6 +159,8 @@
 			$array['transcribe_queue'][0]['transcribe_status'] = $transcribe_status;
 			$array['transcribe_queue'][0]['transcribe_application_name'] = $transcribe_application_name;
 			$array['transcribe_queue'][0]['transcribe_application_uuid'] = $transcribe_application_uuid;
+			$array['transcribe_queue'][0]['transcribe_audio_path'] = $transcribe_audio_path;
+			$array['transcribe_queue'][0]['transcribe_audio_name'] = $transcribe_audio_name;
 			$array['transcribe_queue'][0]['transcribe_target_table'] = $transcribe_target_table;
 			$array['transcribe_queue'][0]['transcribe_target_key_name'] = $transcribe_target_key_name;
 			$array['transcribe_queue'][0]['transcribe_target_key_uuid'] = $transcribe_target_key_uuid;
@@ -188,12 +194,14 @@
 		$sql .= " transcribe_status, ";
 		$sql .= " transcribe_application_name, ";
 		$sql .= " transcribe_application_uuid, ";
+		$sql .= " transcribe_audio_path, ";
+		$sql .= " transcribe_audio_name, ";
 		$sql .= " transcribe_target_table, ";
 		$sql .= " transcribe_target_key_name, ";
 		$sql .= " transcribe_target_key_uuid, ";
 		$sql .= " transcribe_target_column_name, ";
 		$sql .= " transcribe_message ";
-		$sql .= "from transcribe_queue ";
+		$sql .= "from v_transcribe_queue ";
 		$sql .= "where transcribe_queue_uuid = :transcribe_queue_uuid ";
 		$sql .= "and domain_uuid = :domain_uuid ";
 		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
@@ -204,6 +212,8 @@
 			$transcribe_status = $row["transcribe_status"];
 			$transcribe_application_name = $row["transcribe_application_name"];
 			$transcribe_application_uuid = $row["transcribe_application_uuid"];
+			$transcribe_target_path = $row["transcribe_audio_path"];
+			$transcribe_audio_name = $row["transcribe_audio_name"];
 			$transcribe_target_table = $row["transcribe_target_table"];
 			$transcribe_target_key_name = $row["transcribe_target_key_name"];
 			$transcribe_target_key_uuid = $row["transcribe_target_key_uuid"];
@@ -242,8 +252,8 @@
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
-	echo $text['title_description-transcribe_queue']."\n";
-	echo "<br /><br />\n";
+	//echo $text['title_description-transcribe_queue']."\n";
+	//echo "<br /><br />\n";
 
 	if ($action == 'update') {
 		if (permission_exists('transcribe_queue_add')) {
@@ -257,10 +267,10 @@
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 
 	echo "<tr>\n";
-	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "<td width='20%' class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 	echo "	".$text['label-hostname']."\n";
 	echo "</td>\n";
-	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "<td width='80%' class='vtable' style='position: relative;' align='left'>\n";
 	echo "	<input class='formfld' type='text' name='hostname' maxlength='255' value='".escape($hostname)."'>\n";
 	echo "<br />\n";
 	echo $text['description-hostname']."\n";
@@ -328,6 +338,28 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-transcribe_audio_path']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "  <input class='formfld' type='text' name='transcribe_audio_path' maxlength='255' value='".escape($transcribe_audio_path)."'>\n";
+	echo "<br />\n";
+	echo $text['description-transcribe_audio_path']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-transcribe_audio_name']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' style='position: relative;' align='left'>\n";
+	echo "  <input class='formfld' type='text' name='transcribe_audio_name' maxlength='255' value='".escape($transcribe_audio_name)."'>\n";
+	echo "<br />\n";
+	echo $text['description-transcribe_audio_name']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 	echo "	".$text['label-transcribe_target_table']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
@@ -375,7 +407,9 @@
 	echo "	".$text['label-transcribe_message']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='transcribe_message' maxlength='255' value='".escape($transcribe_message)."'>\n";
+	echo "	<textarea class='formfld' style='width: 450px; height: 100px;' name='transcribe_message'>";
+	echo "	".escape($transcribe_message)."\n";
+	echo "	</textarea>";
 	echo "<br />\n";
 	echo $text['description-transcribe_message']."\n";
 	echo "</td>\n";

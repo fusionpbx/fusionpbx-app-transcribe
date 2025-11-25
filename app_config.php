@@ -69,7 +69,7 @@
 
 	//transcribe queue
 		$y = 0;
-		$apps[$x]['db'][$y]['table']['name'] = 'transcribe_queue';
+		$apps[$x]['db'][$y]['table']['name'] = 'v_transcribe_queue';
 		$apps[$x]['db'][$y]['table']['parent'] = '';
 		$z = 0;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'transcribe_queue_uuid';
@@ -101,12 +101,23 @@
 		$apps[$x]['db'][$y]['fields'][$z]['search_by'] = '1';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the transcribe application name.';
 		$z++;
+
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'transcribe_application_uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
 		$apps[$x]['db'][$y]['fields'][$z]['search_by'] = '';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the transcribe application uuid.';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'transcribe_audio_path';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['search_by'] = '1';
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the transcribe audio path.';
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'transcribe_audio_name';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['search_by'] = '1';
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the transcribe audio name.';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'transcribe_target_table';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
