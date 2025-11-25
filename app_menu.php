@@ -11,7 +11,7 @@ $apps[$x]['menu'][0]['title']['de-at'] = '';
 $apps[$x]['menu'][0]['uuid'] = 'b9a4873b-c3f0-47c8-9d70-cf1486064dce';
 $apps[$x]['menu'][0]['parent_uuid'] = '';
 $apps[$x]['menu'][0]['category'] = 'internal';
-$apps[$x]['menu'][0]['path'] = '/app/transcribe_queue/transcribe_queue.php';
+$apps[$x]['menu'][0]['path'] = '/app/transcribe/transcribe_queue.php';
 $apps[$x]['menu'][0]['groups'][] = 'superadmin';
 
 ?>
