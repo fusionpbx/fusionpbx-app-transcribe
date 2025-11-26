@@ -32,7 +32,7 @@ class transcribe {
 	/**
 	 * called when the object is created
 	 */
-	public function __construct(settings $settings = null) {
+	public function __construct(?settings $settings = null) {
 		//make the setting object
 		if ($settings === null) {
 			$settings = new settings();
