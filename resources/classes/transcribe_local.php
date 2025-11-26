@@ -211,9 +211,12 @@ class transcribe_local implements transcribe_interface {
 
 	/**
 	 * transcribe - speech to text
+	 *
+	 * @param string $output_type options: json, text
+	 *
 	 * @return string transcibed messages returned or empty for failure
 	 */
-	public function transcribe() : string {
+	public function transcribe(?string $output_type = 'text') : string {
 
 		// get the number of audio channels
 		$this->audio_channels = $this->get_audio_channels($this->path, $this->filename);
@@ -237,7 +240,7 @@ class transcribe_local implements transcribe_interface {
 			$path_parts = pathinfo($this->filename);
 
 			// get the file extension
-			$file_extension = $path_parts['extension'];
+			$file_extension = strtolower($path_parts['extension'] ?? '');
 
 			// get the base file name without the extension
 			$file_base_name = $path_parts['filename'];
@@ -245,9 +248,19 @@ class transcribe_local implements transcribe_interface {
 			// set the segement filename
 			$output_filename = $file_base_name . ".segment." . ($i + 1) . "." . $file_extension;
 
+			// set the codec parameter for mp3 to copy audio codec stream
+			if ($file_extension == 'mp3') {
+				$codec_parameter = '-c copy';
+			}
+
+			// set the codec parameter for wav when copy is not supported
+			if ($file_extension == 'wav') {
+				$codec_parameter = '-c:a pcm_s16le';
+			}
+
 			// save audio into segments
-			$command = "ffmpeg -y -ss {$start_time} -t {$segment_length} -i {$this->path}/{$this->filename} -c copy {$this->temp_dir}/{$output_filename}";
-			// $command = "ffmpeg -y -threads 4 -ss ".$start_time." -t ".$segment_length." -i ".$this->path."/".$this->filename." -c copy ".$this->temp_dir."/".$output_filename;
+			$command = "ffmpeg -y -ss {$start_time} -t {$segment_length} -i {$this->path}/{$this->filename} {$codec_parameter} {$this->temp_dir}/{$output_filename}";
+			// $command = "ffmpeg -y -threads 4 -ss ".$start_time." -t ".$segment_length." -i ".$this->path."/".$this->filename." -c ".$codec_parameter." ".$this->temp_dir."/".$output_filename;
 			shell_exec($command);
 
 			// single channel process once
@@ -290,6 +303,7 @@ class transcribe_local implements transcribe_interface {
 		}
 		else {
 			// set default values
+			$all_text = '';
 			$all_segments = [];
 
 			// process the transcribe results
@@ -319,6 +333,9 @@ class transcribe_local implements transcribe_interface {
 					$array['end'] = $segment['end'];
 					$array['text'] = $segment['text'];
 
+					//combine all text
+					$all_text .= $segment['text'];
+
 					// prepare the array
 					$all_segments['segments'][] =  $array;
 				}
@@ -334,8 +351,15 @@ class transcribe_local implements transcribe_interface {
 				return $a['start'] <=> $b['start'];
 			});
 
-			// encode the array into a json string
-			$this->message = json_encode(['segments' => $all_segments['segments']], JSON_PRETTY_PRINT);
+			// set the message to return all text
+			if ($output_type == 'text') {
+				$this->message = $all_text;
+			}
+
+			// set the message to return a json string
+			if ($output_type == 'json') {
+				$this->message = json_encode(['segments' => $all_segments['segments']], JSON_PRETTY_PRINT);
+			}
 		}
 
 		// return the transcription
