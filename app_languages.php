@@ -52,6 +52,32 @@ $text['title_description-transcribe_queue']['zh-cn'] = '';
 $text['title_description-transcribe_queue']['ja-jp'] = '';
 $text['title_description-transcribe_queue']['ko-kr'] = '';
 
+$text['label-transcribe_duration']['en-us'] = 'Duration';
+$text['label-transcribe_duration']['en-gb'] = 'Duration';
+$text['label-transcribe_duration']['ar-eg'] = 'المدة';
+$text['label-transcribe_duration']['de-at'] = 'Dauer';
+$text['label-transcribe_duration']['de-ch'] = 'Dauer';
+$text['label-transcribe_duration']['de-de'] = 'Dauer';
+$text['label-transcribe_duration']['el-gr'] = 'Διάρκεια';
+$text['label-transcribe_duration']['es-cl'] = 'Duración';
+$text['label-transcribe_duration']['es-mx'] = 'Duración';
+$text['label-transcribe_duration']['fr-ca'] = 'Durée';
+$text['label-transcribe_duration']['fr-fr'] = 'Durée';
+$text['label-transcribe_duration']['he-il'] = 'مدة';
+$text['label-transcribe_duration']['it-it'] = 'Durata';
+$text['label-transcribe_duration']['nl-nl'] = 'Duur';
+$text['label-transcribe_duration']['pl-pl'] = 'Czas trwania';
+$text['label-transcribe_duration']['pt-br'] = 'Duração';
+$text['label-transcribe_duration']['pt-pt'] = 'Duração';
+$text['label-transcribe_duration']['ro-ro'] = 'Durată';
+$text['label-transcribe_duration']['ru-ru'] = 'Длительность';
+$text['label-transcribe_duration']['sv-se'] = 'Varaktighet';
+$text['label-transcribe_duration']['uk-ua'] = 'Тривалість';
+$text['label-transcribe_duration']['tr-tr'] = 'Süre';
+$text['label-transcribe_duration']['zh-cn'] = '时长';
+$text['label-transcribe_duration']['ja-jp'] = '期間';
+$text['label-transcribe_duration']['ko-kr'] = '지속 시간';
+
 $text['label-transcribe_status']['en-us'] = 'Status';
 $text['label-transcribe_status']['en-gb'] = 'Status';
 $text['label-transcribe_status']['ar-eg'] = 'الحالة';
@@ -727,5 +753,3 @@ $text['label-failed']['tr-tr'] = 'Başarısız';
 $text['label-failed']['zh-cn'] = '失败';
 $text['label-failed']['ja-jp'] = '失敗しました';
 $text['label-failed']['ko-kr'] = '실패했습니다';
-
-?>

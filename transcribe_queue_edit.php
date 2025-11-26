@@ -27,10 +27,7 @@
 	require_once "resources/check_auth.php";
 
 //check permissions
-	if (permission_exists('transcribe_queue_add') || permission_exists('transcribe_queue_edit')) {
-		//access granted
-	}
-	else {
+	if (!(permission_exists('transcribe_queue_add') || permission_exists('transcribe_queue_edit'))) {
 		echo "access denied";
 		exit;
 	}
@@ -212,7 +209,7 @@
 			$transcribe_status = $row["transcribe_status"];
 			$transcribe_application_name = $row["transcribe_application_name"];
 			$transcribe_application_uuid = $row["transcribe_application_uuid"];
-			$transcribe_target_path = $row["transcribe_audio_path"];
+			$transcribe_audio_path = $row["transcribe_audio_path"];
 			$transcribe_audio_name = $row["transcribe_audio_name"];
 			$transcribe_target_table = $row["transcribe_target_table"];
 			$transcribe_target_key_name = $row["transcribe_target_key_name"];
@@ -408,7 +405,7 @@
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
 	echo "	<textarea class='formfld' style='width: 450px; height: 100px;' name='transcribe_message'>";
-	echo "	".escape($transcribe_message)."\n";
+	echo escape($transcribe_message)."\n";
 	echo "	</textarea>";
 	echo "<br />\n";
 	echo $text['description-transcribe_message']."\n";

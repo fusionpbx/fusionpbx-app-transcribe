@@ -29,10 +29,7 @@
 	require_once "resources/paging.php";
 
 //check permissions
-	if (permission_exists('transcribe_queue_view')) {
-		//access granted
-	}
-	else {
+	if (!permission_exists('transcribe_queue_view')) {
 		echo "access denied";
 		exit;
 	}
@@ -112,8 +109,8 @@
 	}
 
 //get order and order by
-	$order_by = $_GET["order_by"] ?? null;
-	$order = $_GET["order"] ?? null;
+	$order_by = $_GET["order_by"] ?? 'u.insert_date';
+	$order = $_GET["order"] ?? 'desc';
 
 //define the variables
 	$search = '';
@@ -129,6 +126,9 @@
 	if (!empty($_GET["show"])) {
 		$show = $_GET["show"];
 	}
+
+//set the time zone
+	$time_zone = $settings->get('domain', 'time_zone', date_default_timezone_get());
 
 //get the count
 	$sql = "select count(transcribe_queue_uuid) ";
@@ -164,20 +164,23 @@
 	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
 	$offset = $rows_per_page * $page;
 
+
 //get the list
 	$sql = "select ";
 	$sql .= "transcribe_queue_uuid, ";
 	$sql .= "u.domain_uuid, ";
 	$sql .= "d.domain_name, ";
 	$sql .= "hostname, ";
+	$sql .= "to_char(timezone(:time_zone, u.insert_date), 'DD Mon YYYY') as date_formatted, \n";
+	$sql .= "to_char(timezone(:time_zone, u.insert_date), 'HH12:MI:SS am') as time_formatted, \n";
 	$sql .= "transcribe_status, ";
+	$sql .= "transcribe_duration, ";
 	$sql .= "transcribe_application_name, ";
 	$sql .= "transcribe_application_uuid, ";
 	$sql .= "transcribe_target_table, ";
 	$sql .= "transcribe_target_key_name, ";
 	$sql .= "transcribe_target_key_uuid, ";
-	$sql .= "transcribe_target_column_name, ";
-	$sql .= "transcribe_message ";
+	$sql .= "transcribe_target_column_name ";
 	$sql .= "from v_transcribe_queue as u, v_domains as d ";
 	if (permission_exists('transcribe_queue_all') && $show == 'all') {
 		$sql .= "where true ";
@@ -194,13 +197,13 @@
 		$sql .= "	or lower(transcribe_target_table) like :search ";
 		$sql .= "	or lower(transcribe_target_key_name) like :search ";
 		$sql .= "	or lower(transcribe_target_column_name) like :search ";
-		$sql .= "	or lower(transcribe_message) like :search ";
 		$sql .= ") ";
 		$parameters['search'] = '%'.$search.'%';
 	}
 	$sql .= "and u.domain_uuid = d.domain_uuid ";
 	$sql .= order_by($order_by, $order, '', '');
 	$sql .= limit_offset($rows_per_page, $offset);
+	$parameters['time_zone'] = $time_zone;
 	$transcribe_queue = $database->select($sql, $parameters ?? null, 'all');
 	unset($sql, $parameters);
 
@@ -268,12 +271,16 @@
 	if ($show == 'all' && permission_exists('transcribe_queue_all')) {
 		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
 	}
-	echo th_order_by('hostname', $text['label-hostname'], $order_by, $order);
+	echo "<th class=''>".$text['label-date']."</th>\n";
+	echo "<th class='hide-md-dn'>".$text['label-time']."</th>\n";
+	echo "<th class='hide-md-dn'>".$text['label-hostname']."</th>\n";
+	echo "<th class='hide-md-dn'>".$text['label-transcribe_application_name']."</th>\n";
+	//echo th_order_by('transcribe_application_name', $text['label-transcribe_application_name'], $order_by, $order);
+	echo "<th class=''>".$text['label-transcribe_duration']."</th>\n";
 	echo th_order_by('transcribe_status', $text['label-transcribe_status'], $order_by, $order);
-	echo th_order_by('transcribe_application_name', $text['label-transcribe_application_name'], $order_by, $order);
-	echo th_order_by('transcribe_target_table', $text['label-transcribe_target_table'], $order_by, $order);
-	echo th_order_by('transcribe_target_key_name', $text['label-transcribe_target_key_name'], $order_by, $order);
-	echo th_order_by('transcribe_target_column_name', $text['label-transcribe_target_column_name'], $order_by, $order);
+	//echo th_order_by('transcribe_target_table', $text['label-transcribe_target_table'], $order_by, $order);
+	//echo th_order_by('transcribe_target_key_name', $text['label-transcribe_target_key_name'], $order_by, $order);
+	//echo th_order_by('transcribe_target_column_name', $text['label-transcribe_target_column_name'], $order_by, $order);
 	if (permission_exists('transcribe_queue_edit') && $list_row_edit_button == 'true') {
 		echo "	<td class='action-button'>&nbsp;</td>\n";
 	}
@@ -292,10 +299,12 @@
 				echo "		<input type='hidden' name='transcribe_queue[$x][transcribe_queue_uuid]' value='".escape($row['transcribe_queue_uuid'])."' />\n";
 				echo "	</td>\n";
 			}
+			echo "	<td nowrap='nowrap'>".escape($row['date_formatted'])."	</td>\n";
+			echo "	<td nowrap='nowrap' class='shrink hide-md-dn'>".escape($row['time_formatted'])."	</td>\n";
 			if ($show == 'all' && permission_exists('transcribe_queue_all')) {
 				echo "	<td>".escape($row['domain_name'])."</td>\n";
 			}
-			echo "	<td>\n";
+			echo "	<td class='hide-md-dn'>\n";
 			if (permission_exists('transcribe_queue_edit')) {
 				echo "	<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['hostname'])."</a>\n";
 			}
@@ -303,11 +312,12 @@
 				echo "	".escape($row['hostname']);
 			}
 			echo "	</td>\n";
-			echo "	<td>".escape($row['transcribe_status'])."</td>\n";
 			echo "	<td>".escape($row['transcribe_application_name'])."</td>\n";
-			echo "	<td>".escape($row['transcribe_target_table'])."</td>\n";
-			echo "	<td>".escape($row['transcribe_target_key_name'])."</td>\n";
-			echo "	<td>".escape($row['transcribe_target_column_name'])."</td>\n";
+			echo "	<td class='hide-md-dn'>".escape($row['transcribe_duration'])."</td>\n";
+			echo "	<td>".escape($row['transcribe_status'])."</td>\n";
+			//echo "	<td>".escape($row['transcribe_target_table'])."</td>\n";
+			//echo "	<td>".escape($row['transcribe_target_key_name'])."</td>\n";
+			//echo "	<td>".escape($row['transcribe_target_column_name'])."</td>\n";
 			if (permission_exists('transcribe_queue_edit') && $list_row_edit_button == 'true') {
 				echo "	<td class='action-button'>\n";
 				echo button::create(['type'=>'button','title'=>$text['button-edit'],'icon'=>$settings->get('theme', 'button_icon_edit'),'link'=>$list_row_url]);

@@ -66,6 +66,30 @@
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Speech to Text API URL.";
 		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "b9a4873b-c3f0-47c8-9d70-cf1486064dce";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "limit";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "30";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Limit the transcribe queue records to process at one time.";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "5ab6f270-6843-490f-834d-48eff70cf4a2";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "interval";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "1";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "How often to process the transcribe queue. Default 5 seconds.";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "8aa066d8-57ec-43e1-aa1c-78b2c2934aa1";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "save_response";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Save the Transcribe response in the transcribe queue. Use this for debugging the transcribe response.";
+		$y++;
 
 	//transcribe queue
 		$y = 0;
@@ -96,12 +120,16 @@
 		$apps[$x]['db'][$y]['fields'][$z]['search_by'] = '1';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the transcribe status.';
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'transcribe_duration';
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'numeric';
+		$apps[$x]['db'][$y]['fields'][$z]['search_by'] = '';
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the transcribe status.';
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'transcribe_application_name';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
 		$apps[$x]['db'][$y]['fields'][$z]['search_by'] = '1';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the transcribe application name.';
 		$z++;
-
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'transcribe_application_uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = 'uuid';
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = 'text';
@@ -170,4 +198,3 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = 'char(36)';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = '';
 
-?>
