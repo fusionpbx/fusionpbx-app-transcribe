@@ -10,4 +10,7 @@ interface transcribe_interface {
 	public function transcribe() : string;
 	public function set_language(string $audio_language);
 	public function get_languages() : array;
+	public function is_language_enabled(): bool;
+	public function set_audio_string(string $audio_string);
+	public function set_audio_mime_type(string $audio_mime_type);
 }
