@@ -49,7 +49,7 @@ class transcribe {
 	/**
 	 * transcribe - speech to text
 	 */
-	public function transcribe() {
+	public function transcribe(?string $output_type) {
 
 		if (!empty($this->engine)) {
 			//set the class interface to use the _template suffix
@@ -75,7 +75,7 @@ class transcribe {
 				}
 				$object->set_path($this->audio_path);
 				$object->set_filename($this->audio_filename);
-				return $object->transcribe();
+				return $object->transcribe($output_type);
 			}
 			else {
 				return '';
