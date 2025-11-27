@@ -148,7 +148,7 @@
 		//audio to text - get the transcription from the audio file
 		$transcribe->audio_path = $transcribe_audio_path;
 		$transcribe->audio_filename = $transcribe_audio_name;
-		$transcribe_message = $transcribe->transcribe();
+		$transcribe_message = $transcribe->transcribe('json');
 
 		//set the end time
 		$end_time = microtime(true);
