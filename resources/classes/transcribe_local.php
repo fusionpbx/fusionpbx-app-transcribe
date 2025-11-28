@@ -195,10 +195,11 @@ class transcribe_local implements transcribe_interface {
 	 */
 	function get_audio_start_time($path, $filename) : float {
 
-		// Use ffmpeg to find the  leading silence
+		// use ffmpeg to find the  leading silence
 		$command = "ffmpeg -i \"" . $path . "/" . $filename . "\" -af \"silencedetect=n=-50dB:d=0.5\" -f null - 2>&1 | grep \"silence_start\"";
 		exec($command, $output);
 
+	    // detect the silence to find the audio start time
 		foreach ($output as $line) {
 			if (strpos($line, 'silence_start') !== false) {
 				preg_match('/silence_start:\s*(\d+\.?\d*)/', $line, $matches);
@@ -207,6 +208,9 @@ class transcribe_local implements transcribe_interface {
 				}
 			}
 		}
+
+		// if not found then send return 0
+		return 0;
 	}
 
 	/**
@@ -447,7 +451,7 @@ class transcribe_local implements transcribe_interface {
 
 		// set the connection timeout and the overall maximum curl run time
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 4500);
 
 		// follow any "Location: " header the server sends as part of the HTTP header.
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
@@ -470,8 +474,7 @@ class transcribe_local implements transcribe_interface {
 
 		// check for errors
 		if (curl_errno($ch)) {
-			echo 'Error: ' . curl_error($ch);
-			exit;
+			return 'Error: ' . curl_error($ch);
 		}
 
 		// close the handle
