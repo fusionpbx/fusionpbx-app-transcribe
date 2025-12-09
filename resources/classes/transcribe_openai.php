@@ -23,9 +23,7 @@ class transcribe_openai implements transcribe_interface {
 	private $audio_mime_type;
 	private $audio_duration;
 	private $format;
-	private $voice;
 	private $message;
-	private $model;
 	private $language;
 	private $translate;
 	private $temp_dir;
@@ -34,16 +32,20 @@ class transcribe_openai implements transcribe_interface {
 	 * called when the object is created
 	 */
 	public function __construct($settings) {
-
-		//build the setting object and get the recording path
+		// build the setting object and get the recording path
 		$this->api_key = $settings->get('transcribe', 'api_key', '');
-		$this->api_url = $settings->get('transcribe', 'api_url', '');
+		$this->api_url = $settings->get('transcribe', 'api_url', 'https://api.openai.com/v1/audio/transcriptions');
 		$this->api_model = $settings->get('transcribe', 'api_model', 'whisper-1');
 
-		//get the temp directory
-		$this->temp_dir = sys_get_temp_dir();
+		// get the temp directory
+		if (file_exists('/dev/shm')) {
+			$this->temp_dir = '/dev/shm';
+		}
+		else {
+			$this->temp_dir = sys_get_temp_dir();
+		}
 
-		//set the audio defaults
+		// set the audio defaults
 		$this->audio_channels = 1;
 		$this->audio_duration = 0;
 	}
@@ -68,10 +70,6 @@ class transcribe_openai implements transcribe_interface {
 		$this->format = $audio_format;
 	}
 
-	public function set_voice(string $audio_voice) {
-		$this->voice = $audio_voice;
-	}
-
 	public function set_language(string $audio_language) {
 		$this->language = $audio_language;
 	}
@@ -85,31 +83,17 @@ class transcribe_openai implements transcribe_interface {
 	}
 
 	public function is_language_enabled() : bool {
-		//return the whether engine is handles languages
+		// return the whether engine is handles languages
 		return false;
 	}
 
 	public function is_translate_enabled() : bool {
-		//return the whether engine is able to translate
+		// return the whether engine is able to translate
 		return false;
 	}
 
-	public function get_voices() : array {
-		$voices = array(
-			"alloy" => "alloy",
-			"echo" => "echo",
-			"fable" => "fable",
-			"nova" => "nova",
-			"onyx" => "onyx",
-			"shimmer" => "shimmer"
-		);
-
-		//return the languages array
-		return $voices;
-	}
-
 	public function get_languages() : array {
-		//create the languages array
+		// create the languages array
 		$languages = array(
 			"af" => "Afrikaans",
 			"ar" => "Arabic",
@@ -170,8 +154,40 @@ class transcribe_openai implements transcribe_interface {
 			"cy" => "Welsh"
 		);
 
-		//return the languages array
+		// return the languages array
 		return $languages;
+	}
+
+	/**
+	 * get_audio_channels - get the number of audio channels in the file
+	 */
+	private function get_audio_channels($path, $filename) : int {
+		// use ffprobe to get the number of audio channels
+ 		$command = "ffprobe -v error -select_streams a:0 -show_entries stream=channels -of default=noprint_wrappers=1:nokey=1 ".$path.'/'.$filename;
+ 		$output = shell_exec($command);
+		// echo "command:\n".$command."\n";
+ 		if (empty($output)) {
+ 			return 1;
+ 		}
+ 		else {
+ 			return (int)trim($output);
+ 		}
+	}
+
+	/**
+	 * get_audio_duration - get the audio duration in seconds
+	 */
+	private function get_audio_duration($path, $filename) : int {
+		// use ffprobe to get the number of audio duration
+		$command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ".$path.'/'.$filename;
+		// echo "command:\n".$command."\n";
+		$output = shell_exec($command);
+ 		if (empty($output)) {
+ 			return 0;
+ 		}
+ 		else {
+ 			return (int)trim($output);
+ 		}
 	}
 
 	/**
@@ -180,126 +196,130 @@ class transcribe_openai implements transcribe_interface {
 	 */
 	public function transcribe() : string {
 
-		// set the api_url if not already set
-		if (empty($this->api_url)) {
-			$this->api_url = 'https://api.openai.com/v1/audio/transcriptions';
-		}
+		// get the number of audio channels
+		$this->audio_channels = $this->get_audio_channels($this->path, $this->filename);
 
-		//get the number of audio channels
-		$command = "ffprobe -v error -select_streams a:0 -show_entries stream=channels -of default=noprint_wrappers=1:nokey=1 ".$this->path.'/'.$this->filename;
-		$output = shell_exec($command);
-		if (!empty($output)) {
-			$this->audio_channels = trim($output);
-		}
+		// get the duration of the audio file
+		$this->audio_duration = $this->get_audio_duration($this->path, $this->filename);
 
-		//get the duration of the audio file
-		$command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ".$this->path.'/'.$this->filename;
-		$output = shell_exec($command);
-		if (!empty($output)) {
-			$this->audio_duration = trim($output);
-		}
+		// use the optional to diarize model
+		//if ($this->audio_channels > 1) {
+		//	$this->api_model = 'gpt-4o-transcribe-diarize';
+		//}
 
-		//when there is more than one audio channel change the api model to diarize the recording
-		if ($this->audio_channels > 1) {
-			$this->api_model = 'gpt-4o-transcribe-diarize';
-		}
+		// define the array
+		$transcribe_array = [];
 
-		//define the array
-		$message = [];
-
-		//segment the audio if needed and then send a request for each segment
-		$segment_length = 180; // 1200 = 20 minutes in seconds
+		// segment the audio if needed and then send a request for each segment
+		$segment_length = 900; // 1200 = 20 minutes in seconds
 		$total_segments = ceil($this->audio_duration / $segment_length);
 
-		//process each segment and return the result in the message array
+		// process each segment and return the result in the message array
 		for ($i = 0; $i < $total_segments; $i++) {
-			//set the start time
+			// set the start time
 			$start_time = $i * $segment_length;
 
-			//get the path i the filename
+			// get the path i the filename
 			$path_parts = pathinfo($this->filename);
 
-			//get the file extension
+			// get the file extension
 			$file_extension = $path_parts['extension'];
 
-			//get the base file name without the extension
+			// get the base file name without the extension
 			$file_base_name = $path_parts['filename'];
 
-			//set the segement filename
+			// set the segement filename
 			$output_filename = $file_base_name . ".segment." . ($i + 1) . "." . $file_extension;
 
-			//save audio into segments
+			// save audio into segments
 			$command = "ffmpeg -y -ss {$start_time} -t {$segment_length} -i {$this->path}/{$this->filename} -c copy {$this->temp_dir}/{$output_filename}";
 			shell_exec($command);
 
-			//call the send_request function with the filename of each segment
-			$message[] = $this->send_request($this->temp_dir, $output_filename);
-
-			//remove the segmented file name
-			unlink($this->temp_dir.'/'.$output_filename);
-		}
-
-		//process the results if there are multiple results then combine them
-		if (empty($message)) {
-			$this->message = '';
-		}
-		elseif (empty($transcript['segments'])) {
-			$this->message = $message[0];
-		}
-		else {
-			//set default values
-			$all_segments = [];
-			$total_tokens = 0;
-			$input_tokens = 0;
-			$input_text_tokens = 0;
-			$input_audio_tokens = 0;
-			$output_tokens = 0;
-
-			foreach ($message as $json) {
-				//decode the json to the transcript array
-				$transcript = json_decode($json, true);
-
-				//merge segments
-				foreach ($transcript['segments'] as $segment) {
-					array_push($all_segments, $segment);
-				}
-
-				//sum up the usage data
-				$total_tokens += $transcript['usage']['total_tokens'];
-				$input_tokens += $transcript['usage']['input_tokens'];
-				$input_text_tokens += $transcript['usage']['input_token_details']['text_tokens'];
-				$input_audio_tokens += $transcript['usage']['input_token_details']['audio_tokens'];
-				$output_tokens += $transcript['usage']['output_tokens'];
+			// single channel process once
+			if ($this->audio_channels == 1) {
+			// call the send_request function with the filename of each segment
+				$transcribe_array[] = array('channel' => $channel, 'segment_id' => $i, 'segment_length' => $segment_length, 'text' => $this->send_request($this->temp_dir, $output_filename));
 			}
 
-			//re-encode into json
-			$combined_transcript = [
-				'segments' => $all_segments,
-				'usage' => [
-					'type' => 'tokens',
-					'total_tokens' => $total_tokens,
-					'input_tokens' => $input_tokens,
-					'input_token_details' => [
-						'text_tokens' => $input_text_tokens,
-						'audio_tokens' => $input_audio_tokens
-					],
-					'output_tokens' => $output_tokens
-				]
-			];
+			// multiple channels process each one in a loop
+			if ($this->audio_channels > 1) {
+				for ($channel = 0; $channel < $this->audio_channels; $channel++) {
+					// set the channel filename
+					$output_channel_filename = $file_base_name . ".segment." . ($i + 1) . ".channel." . $channel . "." . $file_extension;
 
-			//generate the combined text from segments
-			$combined_text = implode(' ', array_map(function($segment) {
-				return trim($segment['text']);
-			}, $all_segments));
+					// seperate the channels from the segment
+					$command = "ffmpeg -y -threads 4 -i " . $this->temp_dir . "/" . $output_filename . " -map_channel 0.0." . $channel . " " . $this->temp_dir . "/" . $output_channel_filename;
+					shell_exec($command);
 
-			$final_output = [
-				'text' => $combined_text,
-				'segments' => $combined_transcript['segments'],
-				'usage' => $combined_transcript['usage']
-			];
+					// call the send_request function with the filename of each segment
+					$transcribe_array[] = array('channel' => (string)$channel, 'segment_id' => $i, 'segment_length' => $segment_length, 'json' => $this->send_request($this->temp_dir, $output_channel_filename));
 
-			//encode the array into a json string
-			$this->message = json_encode($final_output, JSON_PRETTY_PRINT);
+					// remove the segmented file name
+					unlink($this->temp_dir.'/'.$output_channel_filename);
+				}
+			}
+
+			// remove the segmented file name
+			unlink($this->temp_dir . '/' . $output_filename);
+		}
+
+		// process the message array to combine the results
+		if (empty($transcribe_array)) {
+			$this->message = '';
+		}
+		elseif (isset($transcribe_array[0]['text'])) {
+			$this->message = $transcribe_array[0]['text'];
+		}
+		else {
+			// set default values
+			$all_segments = [];
+
+			// process the transcribe results
+			foreach ($transcribe_array as $row) {
+				// decode the json to the transcript array
+				$transcript = json_decode($row['json'], true);
+
+				// merge segments
+				foreach ($transcript['segments'] as $segment) {
+					//set the start time based segment count and length
+					$start_time = $i * $segment_length;
+
+					//calculate the start and stop time
+					if (isset($row['segment_id']) && isset($row['segment_length'])) {
+						$segment['start'] = $segment['start'] + ($row['segment_id'] * $row['segment_length']);
+						$segment['end'] = $segment['end'] + ($row['segment_id'] * $row['segment_length']);
+					}
+
+					//set the speaker using the channel id
+					if (isset($row['channel'])) {
+						$segment['speaker'] = $row['channel'];
+					}
+
+					// add keys values to the array
+					$array = [];
+					$array['channel'] = $row['channel'];
+					$array['speaker'] = $segment['speaker'];
+					$array['start'] = $segment['start'];
+					$array['end'] = $segment['end'];
+					$array['text'] = $segment['text'];
+
+					// prepare the array
+					$all_segments['segments'][] =  $array;
+				}
+			}
+
+			// generate the combined text from segments
+			// $combined_text = implode(' ', array_map(function($segment) {
+			//  	return trim($segment['text']);
+			// }, $all_segments));
+
+			// sort the segments in ascending order
+			usort($all_segments['segments'], function ($a, $b) {
+				return $a['start'] <=> $b['start'];
+			});
+
+			// encode the array into a json string
+			$this->message = json_encode(['segments' => $all_segments['segments']], JSON_PRETTY_PRINT);
 		}
 
 		// return the transcription
@@ -323,7 +343,7 @@ class transcribe_openai implements transcribe_interface {
 		// echo " --form 'response_format=text' \n";
 		// echo "\n";
 
-		//start output buffer
+		// start output buffer
 		ob_start();
 		$out = fopen('php://output', 'w');
 
@@ -341,42 +361,44 @@ class transcribe_openai implements transcribe_interface {
 		$headers[] = "Authorization: Bearer " . $this->api_key;
 		$headers[] = "Content-Type: multipart/form-data";
 
-		//add the request headers
+		// add the request headers
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
 		// prepare the HTTP POST data
 		if (file_exists($path.'/'.$filename)) {
-			//send the audio from the file system
+			// send the audio from the file system
 			$post_data['file'] = new CURLFile($path.'/'.$filename);
 		}
 		elseif (!empty($this->audio_string) && version_compare(PHP_VERSION, '8.1.0', '<')) {
-			//save the tremporary file to the temp directory
-			file_put_contents($this->temp_dir.'/'.$filename, $this->audio_string);
+			// get the temp directory
+			$temp_dir = sys_get_temp_dir();
 
-			//send the audio from the file system
-			$post_data['file'] = new CURLFile($this->temp_dir.'/'.$filename);
+			// save the tremporary file to the temp directory
+			file_put_contents($temp_dir.'/'.$filename, $this->audio_string);
 
-			//remove the temporary file
-			unlink($this->temp_dir.'/'.$filename);
+			// send the audio from the file system
+			$post_data['file'] = new CURLFile($temp_dir.'/'.$filename);
+
+			// remove the temporary file
+			unlink($temp_dir.'/'.$filename);
 		}
 		elseif (!empty($this->audio_string)) {
-			//send the audio from as a string requires PHP 8.1 or higher
+			// send the audio from as a string requires PHP 8.1 or higher
 			$post_data['file'] = new CURLStringFile($this->audio_string, $filename, $this->audio_mime_type);
 		}
 		else {
-			//audio file or string not found
+			// audio file or string not found
 			echo "audio file or string not found";
 			return false;
 		}
 
-		// add additional post data
+		// prepare and send the http post data
 		$post_data['model'] = $this->api_model;
 		if ($this->audio_channels == 1) {
 			$post_data['response_format'] = 'text';
 		}
 		else {
-			$post_data['response_format'] = 'diarized_json';
-			$post_data['chunking_strategy'] = 'auto';
+			$post_data['response_format'] = 'json';
 		}
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
 
@@ -413,10 +435,16 @@ class transcribe_openai implements transcribe_interface {
 		}
 
 		// close the handle
-		curl_close($ch);
+		unset($ch);
 
-		//return the result from the request
+		// return the result from the request
 		return $message;
+	}
+
+	public function set_model(string $model): void {
+		if (array_key_exists($model, $this->get_models())) {
+			$this->api_model = $model;
+		}
 	}
 
 	public function get_models(): array {
