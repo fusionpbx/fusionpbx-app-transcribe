@@ -116,14 +116,11 @@
 	$sql .= " transcribe_queue_uuid, ";
 	$sql .= " hostname, ";
 	$sql .= " transcribe_status, ";
-	$sql .= " transcribe_application_name, ";
-	$sql .= " transcribe_application_uuid, ";
+	$sql .= " transcribe_app_class, ";
+	$sql .= " transcribe_app_method, ";
+	$sql .= " transcribe_app_params, ";
 	$sql .= " transcribe_audio_path, ";
 	$sql .= " transcribe_audio_name, ";
-	$sql .= " transcribe_target_table, ";
-	$sql .= " transcribe_target_key_name, ";
-	$sql .= " transcribe_target_key_uuid, ";
-	$sql .= " transcribe_target_column_name, ";
 	$sql .= " transcribe_message ";
 	$sql .= "from v_transcribe_queue ";
 	$sql .= "where transcribe_queue_uuid = :transcribe_queue_uuid ";
@@ -132,14 +129,11 @@
 	if (is_array($row) && @sizeof($row) != 0) {
 		$hostname = $row["hostname"];
 		$transcribe_status = $row["transcribe_status"];
-		$transcribe_application_name = $row["transcribe_application_name"];
-		$transcribe_application_uuid = $row["transcribe_application_uuid"];
+		$transcribe_app_class = $row["transcribe_app_class"];
+		$transcribe_app_method = $row["transcribe_app_method"];
+		$transcribe_app_params = $row["transcribe_app_params"];
 		$transcribe_audio_path = $row["transcribe_audio_path"];
 		$transcribe_audio_name = $row["transcribe_audio_name"];
-		$transcribe_target_table = $row["transcribe_target_table"];
-		$transcribe_target_key_name = $row["transcribe_target_key_name"];
-		$transcribe_target_key_uuid = $row["transcribe_target_key_uuid"];
-		$transcribe_target_column_name = $row["transcribe_target_column_name"];
 	}
 	unset($sql, $parameters, $row);
 
@@ -185,13 +179,34 @@
 
 //update the target table with the transcription
 	if (!empty($transcribe_message)) {
-		$sql = "update v_" . $transcribe_target_table . " \n";
-		$sql .= "set ".$transcribe_target_column_name." = :transcribe_message \n";
-		$sql .= "where ".$transcribe_target_key_name." = :target_key_uuid; \n";
-		$parameters['target_key_uuid'] = $transcribe_target_key_uuid;
-		$parameters['transcribe_message'] = $transcribe_message;
-		$database->execute($sql, $parameters ?? []);
-		unset($parameters);
+		//convert the json to an array
+		$params = json_decode($transcribe_app_params, true);
+print_r($params);
+		//add the transcription to the params array
+		$params['transcribe_message'] = $transcribe_message;
+
+		//add the transcription to the summary array
+		if (!empty($transcribe_summary)) {
+			$params['transcribe_summary'] = $transcribe_summary;
+		}
+
+		//check to see if the class exists
+		if (!class_exists($transcribe_app_class)) {
+echo __line__."\n";
+			return false;
+		}
+
+		//create an instance dynamically
+		$object = new $transcribe_app_class;
+
+//echo __line__."\n";
+
+		$object->$transcribe_app_method($params);
+echo __line__."\n";
+		//$object->transcribe_queue($params);
+		//call the method dynamically
+		//call_user_func_array([$object, $transcribe_app_method], $params);
+echo __line__."\n";
 	}
 
 //remove the old pid file

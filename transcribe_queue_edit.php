@@ -63,14 +63,10 @@
 	if (!empty($_POST)) {
 		$hostname = $_POST["hostname"];
 		$transcribe_status = $_POST["transcribe_status"];
-		$transcribe_application_name = $_POST["transcribe_application_name"];
-		$transcribe_application_uuid = $_POST["transcribe_application_uuid"];
+		$transcribe_app_class = $_POST["transcribe_app_class"];
+		$transcribe_app_method = $_POST["transcribe_app_method"];
 		$transcribe_audio_path = $_POST["transcribe_audio_path"];
 		$transcribe_audio_name = $_POST["transcribe_audio_name"];
-		$transcribe_target_table = $_POST["transcribe_target_table"];
-		$transcribe_target_key_name = $_POST["transcribe_target_key_name"];
-		$transcribe_target_key_uuid = $_POST["transcribe_target_key_uuid"];
-		$transcribe_target_column_name = $_POST["transcribe_target_column_name"];
 		$transcribe_message = $_POST["transcribe_message"];
 	}
 
@@ -122,14 +118,10 @@
 			$msg = '';
 			if (strlen($hostname) == 0) { $msg .= $text['message-required']." ".$text['label-hostname']."<br>\n"; }
 			if (strlen($transcribe_status) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_status']."<br>\n"; }
-			if (strlen($transcribe_application_name) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_application_name']."<br>\n"; }
-			if (strlen($transcribe_application_uuid) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_application_uuid']."<br>\n"; }
+			if (strlen($transcribe_app_class) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_app_class']."<br>\n"; }
+			if (strlen($transcribe_app_method) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_app_method']."<br>\n"; }
 			if (strlen($transcribe_audio_path) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_audio_path']."<br>\n"; }
 			if (strlen($transcribe_audio_name) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_audio_name']."<br>\n"; }
-			if (strlen($transcribe_target_table) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_target_table']."<br>\n"; }
-			if (strlen($transcribe_target_key_name) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_target_key_name']."<br>\n"; }
-			if (strlen($transcribe_target_key_uuid) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_target_key_uuid']."<br>\n"; }
-			if (strlen($transcribe_target_column_name) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_target_column_name']."<br>\n"; }
 			//if (strlen($transcribe_message) == 0) { $msg .= $text['message-required']." ".$text['label-transcribe_message']."<br>\n"; }
 			if (strlen($msg) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				require_once "resources/header.php";
@@ -154,14 +146,10 @@
 			$array['transcribe_queue'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
 			$array['transcribe_queue'][0]['hostname'] = $hostname;
 			$array['transcribe_queue'][0]['transcribe_status'] = $transcribe_status;
-			$array['transcribe_queue'][0]['transcribe_application_name'] = $transcribe_application_name;
-			$array['transcribe_queue'][0]['transcribe_application_uuid'] = $transcribe_application_uuid;
+			$array['transcribe_queue'][0]['transcribe_app_name'] = $transcribe_app_name;
+			$array['transcribe_queue'][0]['transcribe_app_method'] = $transcribe_app_method;
 			$array['transcribe_queue'][0]['transcribe_audio_path'] = $transcribe_audio_path;
 			$array['transcribe_queue'][0]['transcribe_audio_name'] = $transcribe_audio_name;
-			$array['transcribe_queue'][0]['transcribe_target_table'] = $transcribe_target_table;
-			$array['transcribe_queue'][0]['transcribe_target_key_name'] = $transcribe_target_key_name;
-			$array['transcribe_queue'][0]['transcribe_target_key_uuid'] = $transcribe_target_key_uuid;
-			$array['transcribe_queue'][0]['transcribe_target_column_name'] = $transcribe_target_column_name;
 			$array['transcribe_queue'][0]['transcribe_message'] = $transcribe_message;
 
 		//save the data
@@ -189,14 +177,10 @@
 		$sql .= " transcribe_queue_uuid, ";
 		$sql .= " hostname, ";
 		$sql .= " transcribe_status, ";
-		$sql .= " transcribe_application_name, ";
-		$sql .= " transcribe_application_uuid, ";
+		$sql .= " transcribe_app_class, ";
+		$sql .= " transcribe_app_method, ";
 		$sql .= " transcribe_audio_path, ";
 		$sql .= " transcribe_audio_name, ";
-		$sql .= " transcribe_target_table, ";
-		$sql .= " transcribe_target_key_name, ";
-		$sql .= " transcribe_target_key_uuid, ";
-		$sql .= " transcribe_target_column_name, ";
 		$sql .= " transcribe_message ";
 		$sql .= "from v_transcribe_queue ";
 		$sql .= "where transcribe_queue_uuid = :transcribe_queue_uuid ";
@@ -207,14 +191,10 @@
 		if (is_array($row) && @sizeof($row) != 0) {
 			$hostname = $row["hostname"];
 			$transcribe_status = $row["transcribe_status"];
-			$transcribe_application_name = $row["transcribe_application_name"];
-			$transcribe_application_uuid = $row["transcribe_application_uuid"];
+			$transcribe_app_class = $row["transcribe_app_class"];
+			$transcribe_app_method = $row["transcribe_app_method"];
 			$transcribe_audio_path = $row["transcribe_audio_path"];
 			$transcribe_audio_name = $row["transcribe_audio_name"];
-			$transcribe_target_table = $row["transcribe_target_table"];
-			$transcribe_target_key_name = $row["transcribe_target_key_name"];
-			$transcribe_target_key_uuid = $row["transcribe_target_key_uuid"];
-			$transcribe_target_column_name = $row["transcribe_target_column_name"];
 			$transcribe_message = $row["transcribe_message"];
 		}
 		unset($sql, $parameters, $row);
@@ -313,23 +293,23 @@
 
 	echo "<tr>\n";
 	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-transcribe_application_name']."\n";
+	echo "	".$text['label-transcribe_app_class']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='transcribe_application_name' maxlength='255' value='".escape($transcribe_application_name)."'>\n";
+	echo "	<input class='formfld' type='text' name='transcribe_app_class' maxlength='255' value='".escape($transcribe_app_class)."'>\n";
 	echo "<br />\n";
-	echo $text['description-transcribe_application_name']."\n";
+	echo $text['description-transcribe_app_class']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-transcribe_application_uuid']."\n";
+	echo "	".$text['label-transcribe_app_method']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='transcribe_application_uuid' maxlength='255' value='".escape($transcribe_application_uuid)."'>\n";
+	echo "  <input class='formfld' type='text' name='transcribe_app_method' maxlength='255' value='".escape($transcribe_app_method)."'>\n";
 	echo "<br />\n";
-	echo $text['description-transcribe_application_uuid']."\n";
+	echo $text['description-transcribe_app_method']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -352,50 +332,6 @@
 	echo "  <input class='formfld' type='text' name='transcribe_audio_name' maxlength='255' value='".escape($transcribe_audio_name)."'>\n";
 	echo "<br />\n";
 	echo $text['description-transcribe_audio_name']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-transcribe_target_table']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='transcribe_target_table' maxlength='255' value='".escape($transcribe_target_table)."'>\n";
-	echo "<br />\n";
-	echo $text['description-transcribe_target_table']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-transcribe_target_key_name']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='transcribe_target_key_name' maxlength='255' value='".escape($transcribe_target_key_name)."'>\n";
-	echo "<br />\n";
-	echo $text['description-transcribe_target_key_name']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-transcribe_target_key_uuid']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='transcribe_target_key_uuid' maxlength='255' value='".escape($transcribe_target_key_uuid)."'>\n";
-	echo "<br />\n";
-	echo $text['description-transcribe_target_key_uuid']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
-	echo "<tr>\n";
-	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "	".$text['label-transcribe_target_column_name']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' style='position: relative;' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='transcribe_target_column_name' maxlength='255' value='".escape($transcribe_target_column_name)."'>\n";
-	echo "<br />\n";
-	echo $text['description-transcribe_target_column_name']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

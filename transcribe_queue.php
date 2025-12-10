@@ -144,10 +144,8 @@
 		$sql .= "and ( ";
 		$sql .= "	lower(hostname) like :search ";
 		$sql .= "	or lower(transcribe_status) like :search ";
-		$sql .= "	or lower(transcribe_application_name) like :search ";
-		$sql .= "	or lower(transcribe_target_table) like :search ";
-		$sql .= "	or lower(transcribe_target_key_name) like :search ";
-		$sql .= "	or lower(transcribe_target_column_name) like :search ";
+		$sql .= "	or lower(transcribe_app_class) like :search ";
+		$sql .= "	or lower(transcribe_app_method) like :search ";
 		$sql .= "	or lower(transcribe_message) like :search ";
 		$sql .= ") ";
 		$parameters['search'] = '%'.$search.'%';
@@ -164,7 +162,6 @@
 	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
 	$offset = $rows_per_page * $page;
 
-
 //get the list
 	$sql = "select ";
 	$sql .= "transcribe_queue_uuid, ";
@@ -175,12 +172,8 @@
 	$sql .= "to_char(timezone(:time_zone, u.insert_date), 'HH12:MI:SS am') as time_formatted, \n";
 	$sql .= "transcribe_status, ";
 	$sql .= "transcribe_duration, ";
-	$sql .= "transcribe_application_name, ";
-	$sql .= "transcribe_application_uuid, ";
-	$sql .= "transcribe_target_table, ";
-	$sql .= "transcribe_target_key_name, ";
-	$sql .= "transcribe_target_key_uuid, ";
-	$sql .= "transcribe_target_column_name ";
+	$sql .= "transcribe_app_class, ";
+	$sql .= "transcribe_app_method ";
 	$sql .= "from v_transcribe_queue as u, v_domains as d ";
 	if (permission_exists('transcribe_queue_all') && $show == 'all') {
 		$sql .= "where true ";
@@ -193,10 +186,9 @@
 		$sql .= "and ( ";
 		$sql .= "	lower(hostname) like :search ";
 		$sql .= "	or lower(transcribe_status) like :search ";
-		$sql .= "	or lower(transcribe_application_name) like :search ";
-		$sql .= "	or lower(transcribe_target_table) like :search ";
-		$sql .= "	or lower(transcribe_target_key_name) like :search ";
-		$sql .= "	or lower(transcribe_target_column_name) like :search ";
+		$sql .= "	or lower(transcribe_app_class) like :search ";
+		$sql .= "	or lower(transcribe_app_method) like :search ";
+		$sql .= "	or lower(transcribe_message) like :search ";
 		$sql .= ") ";
 		$parameters['search'] = '%'.$search.'%';
 	}
@@ -312,7 +304,7 @@
 				echo "	".escape($row['hostname']);
 			}
 			echo "	</td>\n";
-			echo "	<td>".escape($row['transcribe_application_name'])."</td>\n";
+			echo "	<td>".escape($row['transcribe_app_model'])."</td>\n";
 			echo "	<td class='hide-md-dn'>".escape($row['transcribe_duration'])."</td>\n";
 			echo "	<td>".escape($row['transcribe_status'])."</td>\n";
 			//echo "	<td>".escape($row['transcribe_target_table'])."</td>\n";
