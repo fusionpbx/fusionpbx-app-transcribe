@@ -181,7 +181,7 @@
 	if (!empty($transcribe_message)) {
 		//convert the json to an array
 		$params = json_decode($transcribe_app_params, true);
-print_r($params);
+
 		//add the transcription to the params array
 		$params['transcribe_message'] = $transcribe_message;
 
@@ -192,21 +192,16 @@ print_r($params);
 
 		//check to see if the class exists
 		if (!class_exists($transcribe_app_class)) {
-echo __line__."\n";
 			return false;
 		}
 
 		//create an instance dynamically
 		$object = new $transcribe_app_class;
 
-//echo __line__."\n";
-
 		$object->$transcribe_app_method($params);
-echo __line__."\n";
 		//$object->transcribe_queue($params);
 		//call the method dynamically
 		//call_user_func_array([$object, $transcribe_app_method], $params);
-echo __line__."\n";
 	}
 
 //remove the old pid file
