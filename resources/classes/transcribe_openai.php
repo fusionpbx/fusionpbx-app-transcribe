@@ -279,6 +279,12 @@ class transcribe_openai implements transcribe_interface {
 				// decode the json to the transcript array
 				$transcript = json_decode($row['json'], true);
 
+				// check for errors in the transcript array
+				if (isset($transcript['error'])) {
+					print_r($transcript);
+					return false;
+				}
+
 				// merge segments
 				foreach ($transcript['segments'] as $segment) {
 					//set the start time based segment count and length
@@ -398,7 +404,7 @@ class transcribe_openai implements transcribe_interface {
 			$post_data['response_format'] = 'text';
 		}
 		else {
-			$post_data['response_format'] = 'json';
+			$post_data['response_format'] = 'verbose_json';
 		}
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
 
