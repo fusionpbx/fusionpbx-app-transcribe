@@ -22,6 +22,7 @@ class transcribe_openai implements transcribe_interface {
 	private $audio_string;
 	private $audio_mime_type;
 	private $audio_duration;
+	private $diarize;
 	private $format;
 	private $message;
 	private $language;
@@ -36,6 +37,7 @@ class transcribe_openai implements transcribe_interface {
 		$this->api_key = $settings->get('transcribe', 'api_key', '');
 		$this->api_url = $settings->get('transcribe', 'api_url', 'https://api.openai.com/v1/audio/transcriptions');
 		$this->api_model = $settings->get('transcribe', 'api_model', 'whisper-1');
+		$this->diarize = $settings->get('transcribe', 'diarize', false);
 
 		// get the temp directory
 		if (file_exists('/dev/shm')) {
@@ -202,11 +204,6 @@ class transcribe_openai implements transcribe_interface {
 		// get the duration of the audio file
 		$this->audio_duration = $this->get_audio_duration($this->path, $this->filename);
 
-		// use the optional to diarize model
-		//if ($this->audio_channels > 1) {
-		//	$this->api_model = 'gpt-4o-transcribe-diarize';
-		//}
-
 		// define the array
 		$transcribe_array = [];
 
@@ -235,14 +232,14 @@ class transcribe_openai implements transcribe_interface {
 			$command = "ffmpeg -y -ss {$start_time} -t {$segment_length} -i {$this->path}/{$this->filename} -c copy {$this->temp_dir}/{$output_filename}";
 			shell_exec($command);
 
-			// single channel process once
-			if ($this->audio_channels == 1) {
-			// call the send_request function with the filename of each segment
+			// single channel process once or if diarize is enabled
+			if ($this->audio_channels == 1 || $this->diarize) {
+				// call the send_request function with the filename of each segment
 				$transcribe_array[] = array('channel' => $channel, 'segment_id' => $i, 'segment_length' => $segment_length, 'text' => $this->send_request($this->temp_dir, $output_filename));
 			}
 
 			// multiple channels process each one in a loop
-			if ($this->audio_channels > 1) {
+			if ($this->audio_channels > 1 && !$this->diarize) {
 				for ($channel = 0; $channel < $this->audio_channels; $channel++) {
 					// set the channel filename
 					$output_channel_filename = $file_base_name . ".segment." . ($i + 1) . ".channel." . $channel . "." . $file_extension;
@@ -267,17 +264,21 @@ class transcribe_openai implements transcribe_interface {
 		if (empty($transcribe_array)) {
 			$this->message = '';
 		}
-		elseif (isset($transcribe_array[0]['text'])) {
-			$this->message = $transcribe_array[0]['text'];
-		}
 		else {
 			// set default values
 			$all_segments = [];
 
+			// determine the key to get the content from the transcribe results
+			if (isset($transcribe_array[0]['text'])) {
+				$content_key = 'text';
+			} else {
+				$content_key = 'json';
+			}
+
 			// process the transcribe results
 			foreach ($transcribe_array as $row) {
 				// decode the json to the transcript array
-				$transcript = json_decode($row['json'], true);
+				$transcript = json_decode($row[$content_key], true);
 
 				// check for errors in the transcript array
 				if (isset($transcript['error'])) {
@@ -296,15 +297,27 @@ class transcribe_openai implements transcribe_interface {
 						$segment['end'] = $segment['end'] + ($row['segment_id'] * $row['segment_length']);
 					}
 
+					//set the speaker for diarization to a number
+					if ($this->diarize) {
+						if ($segment['speaker'] == 'A') {
+							$segment['channel'] = '0';
+						} else if ($segment['speaker'] == 'B') {
+							$segment['channel'] = '1';
+						}
+					}
+
 					//set the speaker using the channel id
-					if (isset($row['channel'])) {
-						$segment['speaker'] = $row['channel'];
+					if (!$this->diarize) {
+						if (isset($row['channel'])) {
+							$segment['speaker'] = $row['channel'];
+							$segment['channel'] = $row['channel'];
+						}
 					}
 
 					// add keys values to the array
 					$array = [];
-					$array['channel'] = $row['channel'];
-					$array['speaker'] = $segment['speaker'];
+					$array['channel'] = $segment['channel'];
+					$array['speaker'] = $segment['channel'];
 					$array['start'] = $segment['start'];
 					$array['end'] = $segment['end'];
 					$array['text'] = $segment['text'];
@@ -403,6 +416,10 @@ class transcribe_openai implements transcribe_interface {
 		if ($this->audio_channels == 1) {
 			$post_data['response_format'] = 'text';
 		}
+		if ($this->audio_channels > 1 && $this->diarize) {
+			$post_data['response_format'] = 'diarized_json';
+			$post_data['chunking_strategy'] = 'auto';
+		}
 		else {
 			$post_data['response_format'] = 'verbose_json';
 		}
@@ -437,7 +454,7 @@ class transcribe_openai implements transcribe_interface {
 		// check for errors
 		if (curl_errno($ch)) {
 			echo 'Error: ' . curl_error($ch);
-			exit;
+			return false;
 		}
 
 		// close the handle
