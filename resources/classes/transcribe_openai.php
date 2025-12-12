@@ -193,6 +193,25 @@ class transcribe_openai implements transcribe_interface {
 	}
 
 	/**
+	 * get_audio_start - get the audio start time in seconds
+	 */
+	function get_audio_start_time($path, $filename) : float {
+
+		// Use ffmpeg to find the  leading silence
+		$command = "ffmpeg -i \"" . $path . "/" . $filename . "\" -af \"silencedetect=n=-50dB:d=0.5\" -f null - 2>&1 | grep \"silence_start\"";
+		exec($command, $output);
+
+		foreach ($output as $line) {
+			if (strpos($line, 'silence_start') !== false) {
+				preg_match('/silence_start:\s*(\d+\.?\d*)/', $line, $matches);
+				if (isset($matches[1])) {
+					return (float)$matches[1];
+				}
+			}
+		}
+	}
+
+	/**
 	 * transcribe - speech to text
 	 * @return string transcibed messages returned or empty for failure
 	 */
@@ -248,8 +267,11 @@ class transcribe_openai implements transcribe_interface {
 					$command = "ffmpeg -y -threads 4 -i " . $this->temp_dir . "/" . $output_filename . " -map_channel 0.0." . $channel . " " . $this->temp_dir . "/" . $output_channel_filename;
 					shell_exec($command);
 
+					// get the audio start time
+					$audio_start_time = $this->get_audio_start_time($this->temp_dir, $output_channel_filename);
+
 					// call the send_request function with the filename of each segment
-					$transcribe_array[] = array('channel' => (string)$channel, 'segment_id' => $i, 'segment_length' => $segment_length, 'json' => $this->send_request($this->temp_dir, $output_channel_filename));
+					$transcribe_array[] = array('channel' => (string)$channel, 'segment_id' => $i, 'segment_length' => $segment_length, 'audio_start_time' => $audio_start_time, 'json' => $this->send_request($this->temp_dir, $output_channel_filename));
 
 					// remove the segmented file name
 					unlink($this->temp_dir.'/'.$output_channel_filename);
@@ -288,13 +310,11 @@ class transcribe_openai implements transcribe_interface {
 
 				// merge segments
 				foreach ($transcript['segments'] as $segment) {
-					//set the start time based segment count and length
-					$start_time = $i * $segment_length;
 
 					//calculate the start and stop time
 					if (isset($row['segment_id']) && isset($row['segment_length'])) {
-						$segment['start'] = $segment['start'] + ($row['segment_id'] * $row['segment_length']);
-						$segment['end'] = $segment['end'] + ($row['segment_id'] * $row['segment_length']);
+						$segment['start'] = $segment['start'] + $row['audio_start_time'] + ($row['segment_id'] * $row['segment_length']);
+						$segment['end'] = $segment['end'] + $row['audio_start_time'] + ($row['segment_id'] * $row['segment_length']);
 					}
 
 					//set the speaker for diarization to a number
