@@ -49,7 +49,7 @@ class transcribe {
 	/**
 	 * transcribe - speech to text
 	 */
-	public function transcribe(?string $output_type) {
+	public function transcribe(?string $output_type = 'text') {
 
 		if (!empty($this->engine)) {
 			//set the class interface to use the _template suffix
