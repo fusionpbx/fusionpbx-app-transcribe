@@ -199,6 +199,7 @@ class transcribe_openai implements transcribe_interface {
 
 		// Use ffmpeg to find the  leading silence
 		$command = "ffmpeg -i \"" . $path . "/" . $filename . "\" -af \"silencedetect=n=-50dB:d=0.5\" -f null - 2>&1 | grep \"silence_start\"";
+		//echo $command."\n";
 		exec($command, $output);
 
 		// detect the silence to find the audio start time
@@ -266,6 +267,7 @@ class transcribe_openai implements transcribe_interface {
 
 			// save audio into segments
 			$command = "ffmpeg -y -ss {$start_time} -t {$segment_length} -i {$this->path}/{$this->filename} {$codec_parameter} {$this->temp_dir}/{$output_filename}";
+			//echo $command."\n";
 			shell_exec($command);
 
 			// single channel process once or if diarize is enabled
@@ -281,7 +283,8 @@ class transcribe_openai implements transcribe_interface {
 					$output_channel_filename = $file_base_name . ".segment." . ($i + 1) . ".channel." . $channel . "." . $file_extension;
 
 					// seperate the channels from the segment
-					$command = "ffmpeg -y -threads 4 -i " . $this->temp_dir . "/" . $output_filename . " -map_channel 0.0." . $channel . " " . $this->temp_dir . "/" . $output_channel_filename;
+					$command = "ffmpeg -y -threads 4 -i " . $this->temp_dir . "/" . $output_filename . " -af \"pan=mono|c0=c" . $channel . "\" " . $this->temp_dir . "/" . $output_channel_filename;
+					//echo $command."\n";
 					shell_exec($command);
 
 					// get the audio start time
