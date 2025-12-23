@@ -291,11 +291,11 @@
 				echo "		<input type='hidden' name='transcribe_queue[$x][transcribe_queue_uuid]' value='".escape($row['transcribe_queue_uuid'])."' />\n";
 				echo "	</td>\n";
 			}
-			echo "	<td nowrap='nowrap'>".escape($row['date_formatted'])."	</td>\n";
-			echo "	<td nowrap='nowrap' class='shrink hide-md-dn'>".escape($row['time_formatted'])."	</td>\n";
 			if ($show == 'all' && permission_exists('transcribe_queue_all')) {
 				echo "	<td>".escape($row['domain_name'])."</td>\n";
 			}
+			echo "	<td nowrap='nowrap'>".escape($row['date_formatted'])."	</td>\n";
+			echo "	<td nowrap='nowrap' class='shrink hide-md-dn'>".escape($row['time_formatted'])."	</td>\n";
 			echo "	<td class='hide-md-dn'>\n";
 			if (permission_exists('transcribe_queue_edit')) {
 				echo "	<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['hostname'])."</a>\n";
