@@ -10,7 +10,7 @@
 	}
 
 //define the global settings
-	global $settings, $database;
+	global $database;
 
 //increase limits
 	set_time_limit(7200);
@@ -108,12 +108,10 @@
 		sleep($sleep_seconds);
 	}
 
-//get the email settings
-	$save_response = $settings->get('transcribe', 'save_response', false);
-
 //get the transcribe job details
 	$sql = "select ";
 	$sql .= " transcribe_queue_uuid, ";
+	$sql .= " domain_uuid, ";
 	$sql .= " hostname, ";
 	$sql .= " transcribe_status, ";
 	$sql .= " transcribe_app_class, ";
@@ -128,6 +126,7 @@
 	$row = $database->select($sql, $parameters, 'row');
 	if (is_array($row) && @sizeof($row) != 0) {
 		$hostname = $row["hostname"];
+		$domain_uuid = $row["domain_uuid"];
 		$transcribe_status = $row["transcribe_status"];
 		$transcribe_app_class = $row["transcribe_app_class"];
 		$transcribe_app_method = $row["transcribe_app_method"];
@@ -136,6 +135,12 @@
 		$transcribe_audio_name = $row["transcribe_audio_name"];
 	}
 	unset($sql, $parameters, $row);
+
+//create the settings object with the domain_uuid
+	$settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
+
+//get the transcribe settings
+	$save_response = $settings->get('transcribe', 'save_response', false);
 
 //transcribe the audio file
 	if (!empty($transcribe_audio_path) && !empty($transcribe_audio_name)) {
