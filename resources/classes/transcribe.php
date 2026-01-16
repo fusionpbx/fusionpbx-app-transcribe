@@ -84,4 +84,50 @@ class transcribe {
 
 	}
 
+	/**
+	 * transcribe - convert the transcription into a conversation
+	 */
+	static function conversation_format($transcription = '', $type = 'html') {
+		global $text;
+
+		if ($type == 'html') {
+			$html = '';
+			$previous_speaker = '';
+			$i = 0;
+			foreach ($transcription as $segment) {
+				if ($previous_speaker != $segment['speaker']) {
+					if ($i > 0) { $html .= "</div>\n"; }
+					$speaker_class = $segment['speaker'] === '0' ? 'message-bubble-em' : 'message-bubble-me';
+					$html .= "<div class='message-bubble {$speaker_class}'>";
+					$html .= "<div ><strong>" . $text['label-speaker'] . " " . $segment['speaker'] . "</strong></div>\n";
+					$text .= $text['label-speaker'] . " " . $segment['speaker']."\n";
+				}
+				//$html .= "	<span class='time'>".round($segment['start'])."</span>";
+				$html .= "".escape(trim($segment['text']))." ";
+				if ($previous_speaker != $segment['speaker']) {
+					$previous_speaker = $segment['speaker'];
+				}
+				$i++;
+			}
+			$html .= "</div>\n";
+			return $html;
+		}
+
+		if ($type == 'text') {
+			$text = '';
+			$previous_speaker = '';
+			$i = 0;
+			foreach ($transcription as $segment) {
+				if ($previous_speaker != $segment['speaker']) {
+					$text .= "\n".$text['label-speaker'] . " " . $segment['speaker']."\n";
+				}
+				$text .= " ".escape(trim($segment['text']))." ";
+				if ($previous_speaker != $segment['speaker']) {
+					$previous_speaker = $segment['speaker'];
+				}
+				$i++;
+			}
+			return $text;
+		}
+	}
 }
