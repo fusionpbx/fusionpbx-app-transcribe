@@ -90,25 +90,35 @@ class transcribe {
 	static function conversation_format($transcription = '', $type = 'html') {
 		global $text;
 
+		$text['label-speaker'] ?? 'Speaker';
+
+		//if the transcription is empty return an empty string
+		if (empty($transcription)) {
+			return '';
+		}
+
+		//decode transcription json text
+		$transcribe_array = json_decode($transcription, true);
+
 		if ($type == 'html') {
 			$html = '';
 			$previous_speaker = '';
 			$i = 0;
-			foreach ($transcription as $segment) {
-				if ($previous_speaker != $segment['speaker']) {
+			foreach ($transcribe_array['segments'] as $row) {
+				if ($previous_speaker != $row['speaker']) {
 					if ($i > 0) { $html .= "</div>\n"; }
-					$speaker_class = $segment['speaker'] === '0' ? 'message-bubble-em' : 'message-bubble-me';
+					$speaker_class = $row['speaker'] === '0' ? 'message-bubble-em' : 'message-bubble-me';
 					$html .= "<div class='message-bubble {$speaker_class}'>";
-					$html .= "<div ><strong>" . $text['label-speaker'] . " " . $segment['speaker'] . "</strong></div>\n";
-					$text .= $text['label-speaker'] . " " . $segment['speaker']."\n";
+					$html .= "<div ><strong>" . $text['label-speaker'] . " " . $row['speaker'] . "</strong></div>\n";
 				}
-				//$html .= "	<span class='time'>".round($segment['start'])."</span>";
-				$html .= "".escape(trim($segment['text']))." ";
-				if ($previous_speaker != $segment['speaker']) {
-					$previous_speaker = $segment['speaker'];
+				//$html .= "	<span class='time'>".round($row['start'])."</span>";
+				$html .= "".escape(trim($row['text']))." ";
+				if ($previous_speaker != $row['speaker']) {
+					$previous_speaker = $row['speaker'];
 				}
 				$i++;
 			}
+
 			$html .= "</div>\n";
 			return $html;
 		}
@@ -117,13 +127,13 @@ class transcribe {
 			$text = '';
 			$previous_speaker = '';
 			$i = 0;
-			foreach ($transcription as $segment) {
-				if ($previous_speaker != $segment['speaker']) {
-					$text .= "\n".$text['label-speaker'] . " " . $segment['speaker']."\n";
+			foreach ($transcription['segments'] as $row) {
+				if ($previous_speaker != $row['speaker']) {
+					$text .= "\n".$text['label-speaker'] . " " . $row['speaker']."\n";
 				}
-				$text .= " ".escape(trim($segment['text']))." ";
-				if ($previous_speaker != $segment['speaker']) {
-					$previous_speaker = $segment['speaker'];
+				$text .= " ".escape(trim($row['text']))." ";
+				if ($previous_speaker != $row['speaker']) {
+					$previous_speaker = $row['speaker'];
 				}
 				$i++;
 			}
