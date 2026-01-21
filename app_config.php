@@ -48,7 +48,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "openai";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Speech to Text API engine.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Speech to Text API engine. openai, elevenlabs, inworld";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "7883f9fc-9259-4f9b-a73d-532f44db2a28";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
