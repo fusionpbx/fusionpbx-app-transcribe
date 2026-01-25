@@ -90,7 +90,7 @@ class transcribe {
 	static function conversation_format($transcription = '', $type = 'html') {
 		global $text;
 
-		$text['label-speaker'] ?? 'Speaker';
+		$text['label-speaker'] = 'Speaker';
 
 		//if the transcription is empty return an empty string
 		if (empty($transcription)) {
@@ -101,43 +101,46 @@ class transcribe {
 		$transcribe_array = json_decode($transcription, true);
 
 		if ($type == 'html') {
-			$html = '';
+			$response = '';
 			$previous_speaker = '';
 			$i = 0;
 			foreach ($transcribe_array['segments'] as $row) {
 				if ($previous_speaker != $row['speaker']) {
-					if ($i > 0) { $html .= "</div>\n"; }
+					if ($i > 0) { $response .= "</div>\n"; }
 					$speaker_class = $row['speaker'] === '0' ? 'message-bubble-em' : 'message-bubble-me';
-					$html .= "<div class='message-bubble {$speaker_class}'>";
-					$html .= "<div ><strong>" . $text['label-speaker'] . " " . $row['speaker'] . "</strong></div>\n";
+					$response .= "<div class='message-bubble {$speaker_class}'>";
+					$response .= "<div ><strong>" . $text['label-speaker'] . " " . $row['speaker'] . "</strong></div>\n";
 				}
 				//$html .= "	<span class='time'>".round($row['start'])."</span>";
-				$html .= "".escape(trim($row['text']))." ";
+				$response .= "".escape(trim($row['text']))." ";
 				if ($previous_speaker != $row['speaker']) {
 					$previous_speaker = $row['speaker'];
 				}
 				$i++;
 			}
 
-			$html .= "</div>\n";
-			return $html;
+			$response .= "</div>\n";
+			return $response;
 		}
 
 		if ($type == 'text') {
-			$text = '';
+			$response = '';
 			$previous_speaker = '';
 			$i = 0;
-			foreach ($transcription['segments'] as $row) {
+			foreach ($transcribe_array['segments'] as $row) {
 				if ($previous_speaker != $row['speaker']) {
-					$text .= "\n".$text['label-speaker'] . " " . $row['speaker']."\n";
+					if ($i > 0) { $response .= "\n"; }
+					$response .= "\n" . $text['label-speaker'] . " " . $row['speaker'] . "\n";
 				}
-				$text .= " ".escape(trim($row['text']))." ";
+				$response .= "".escape(trim($row['text']))." ";
 				if ($previous_speaker != $row['speaker']) {
 					$previous_speaker = $row['speaker'];
 				}
 				$i++;
 			}
-			return $text;
+
+			$response .= "</div>\n";
+			return $response;
 		}
 	}
 }
