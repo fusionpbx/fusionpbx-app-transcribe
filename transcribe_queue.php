@@ -146,7 +146,6 @@
 		$sql .= "	or lower(transcribe_status) like :search ";
 		$sql .= "	or lower(transcribe_app_class) like :search ";
 		$sql .= "	or lower(transcribe_app_method) like :search ";
-		$sql .= "	or lower(transcribe_message) like :search ";
 		$sql .= ") ";
 		$parameters['search'] = '%'.$search.'%';
 	}
