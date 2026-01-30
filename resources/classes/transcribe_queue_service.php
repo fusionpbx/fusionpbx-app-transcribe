@@ -76,35 +76,47 @@ class transcribe_queue_service extends service {
 
 		// Service work is handled here
 		while ($this->running) {
-			//get the pending jobs from the transcribe queue
-			$sql = "select transcribe_queue_uuid ";
+			// Get the processing count from the transcribe queue
+			$sql = "select count(*) as count ";
 			$sql .= "from v_transcribe_queue ";
 			$sql .= "where hostname = :hostname ";
-			$sql .= "and transcribe_status = 'pending' ";
-			$sql .= "limit :limit ";
+			$sql .= "and transcribe_status = 'processing' ";
 			$parameters['hostname'] = $this->hostname;
-			$parameters['limit'] = $this->limit;
-			$transcribe_queue = $this->database->select($sql, $parameters , 'all');
-			if (!empty($transcribe_queue)) {
-				//$this->debug(implode(', ', $transcribe_queue));
-				foreach($transcribe_queue as $row) {
-					//build the process command
-					$command = PHP_BINARY." ".dirname(__DIR__, 4)."/app/transcribe/resources/jobs/process.php ";
-					$command .= "'action=send&transcribe_queue_uuid=".$row["transcribe_queue_uuid"]."&hostname=".$this->hostname."'";
+			$processing_count = $this->database->select($sql, $parameters, 'column');
+ 			unset($parameters);
 
-					if (parent::$log_level == 7) {
-						//run process inline to see debug info
-						$this->debug($command);
-						$result = system($command);
-						$this->debug($result);
-					}
-					else {
-						//starts process rapidly doesn't wait for previous process to finish (used for production)
-						$handle = popen($command." > /dev/null &", 'r');
-						//echo "'$handle'; " . gettype($handle) . "\n";
-						$read = fread($handle, 2096);
-						//echo $read;
-						pclose($handle);
+	        // Only proceed if we haven't reached the limit
+	        if ($processing_count < $this->limit) {
+	            // Get pending jobs from the transcribe queue
+				$sql = "select transcribe_queue_uuid ";
+				$sql .= "from v_transcribe_queue ";
+				$sql .= "where hostname = :hostname ";
+				$sql .= "and transcribe_status = 'pending' ";
+				$sql .= "limit :limit ";
+				$parameters['hostname'] = $this->hostname;
+				$parameters['limit'] = $this->limit;
+				$transcribe_queue = $this->database->select($sql, $parameters , 'all');
+				if (!empty($transcribe_queue)) {
+					//$this->debug(implode(', ', $transcribe_queue));
+					foreach($transcribe_queue as $row) {
+						// Build the process command
+						$command = PHP_BINARY." ".dirname(__DIR__, 4)."/app/transcribe/resources/jobs/process.php ";
+						$command .= "'action=send&transcribe_queue_uuid=".$row["transcribe_queue_uuid"]."&hostname=".$this->hostname."'";
+
+						if (parent::$log_level == 7) {
+							// Run process inline to see debug info
+							$this->debug($command);
+							$result = system($command);
+							$this->debug($result);
+						}
+						else {
+							// Starts process rapidly doesn't wait for previous process to finish (used for production)
+							$handle = popen($command." > /dev/null &", 'r');
+							//$this->debug("'$handle' " . gettype($handle));
+							$read = fread($handle, 2096);
+							//$this->debug($read);
+							pclose($handle);
+						}
 					}
 				}
 			}
