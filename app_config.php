@@ -70,7 +70,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "limit";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "30";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "3";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Limit the transcribe queue records to process at one time.";
 		$y++;
@@ -80,7 +80,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "1";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "How often to process the transcribe queue. Default 5 seconds.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "How often to process the transcribe queue.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "8aa066d8-57ec-43e1-aa1c-78b2c2934aa1";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
