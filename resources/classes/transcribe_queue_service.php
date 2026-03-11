@@ -82,8 +82,12 @@ class transcribe_queue_service extends service {
 			$sql .= "where hostname = :hostname ";
 			$sql .= "and transcribe_status = 'processing' ";
 			$parameters['hostname'] = $this->hostname;
-			$processing_count = $this->database->select($sql, $parameters, 'column');
+			$row = $this->database->select($sql, $parameters, 'row');
+			$processing_count = $row['count'] ?? 0;
  			unset($parameters);
+
+			// Send a message for debugging
+			$this->debug("Processing Count: ".$processing_count.", Limit: ".$this->limit);
 
 	        // Only proceed if we haven't reached the limit
 	        if ($processing_count < $this->limit) {
