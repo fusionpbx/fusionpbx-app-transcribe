@@ -162,8 +162,18 @@ class transcribe_local implements transcribe_interface {
 	 * get_audio_channels - get the number of audio channels in the file
 	 */
 	private function get_audio_channels($path, $filename) : int {
-		// use ffprobe to get the number of audio channels
- 		$command = "ffprobe -v error -select_streams a:0 -show_entries stream=channels -of default=noprint_wrappers=1:nokey=1 ".$path.'/'.$filename;
+		// ensure the path and file name are not empty
+		if (empty($path) || empty($filename)) {
+			return 0;
+		}
+
+		// check to make sure the file exists
+		if (!file_exists($path . '/' . $filename)) {
+			return 0;
+		}
+
+		// get the number of audio channels using ffprobe
+ 		$command = "ffprobe -v error -select_streams a:0 -show_entries stream=channels -of default=noprint_wrappers=1:nokey=1 ".escapeshellarg($path).'/'.escapeshellarg($filename);
  		$output = shell_exec($command);
 		// echo "command:\n".$command."\n";
  		if (empty($output)) {
@@ -178,8 +188,18 @@ class transcribe_local implements transcribe_interface {
 	 * get_audio_duration - get the audio duration in seconds
 	 */
 	private function get_audio_duration($path, $filename) : int {
+		// ensure the path and file name are not empty
+		if (empty($path) || empty($filename)) {
+			return 0;
+		}
+
+		// check to make sure the file exists
+		if (!file_exists($path . '/' . $filename)) {
+			return 0;
+		}
+
 		// use ffprobe to get the number of audio duration
-		$command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ".$path.'/'.$filename;
+		$command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ".escapeshellarg($path).'/'.escapeshellarg($filename);
 		// echo "command:\n".$command."\n";
 		$output = shell_exec($command);
  		if (empty($output)) {
@@ -195,8 +215,18 @@ class transcribe_local implements transcribe_interface {
 	 */
 	function get_audio_start_time($path, $filename) : float {
 
+		// ensure the path and file name are not empty
+		if (empty($path) || empty($filename)) {
+			return 0;
+		}
+
+		// check to make sure the file exists
+		if (!file_exists($path . '/' . $filename)) {
+			return 0;
+		}
+
 		// use ffmpeg to find the  leading silence
-		$command = "ffmpeg -i \"" . $path . "/" . $filename . "\" -af \"silencedetect=n=-50dB:d=0.5\" -f null - 2>&1 | grep \"silence_start\"";
+		$command = "ffmpeg -i \"" . escapeshellarg($path) . "/" . escapeshellarg($filename) . "\" -af \"silencedetect=n=-50dB:d=0.5\" -f null - 2>&1 | grep \"silence_start\"";
 		//echo $command."\n";
 		exec($command, $output);
 
@@ -222,6 +252,16 @@ class transcribe_local implements transcribe_interface {
 	 * @return string transcibed messages returned or empty for failure
 	 */
 	public function transcribe(?string $output_type = 'text') : string {
+
+		// ensure the path and file name are not empty
+		if (empty($this->path) || empty($this->filename)) {
+			return 0;
+		}
+
+		// check to make sure the file exists
+		if (!file_exists($this->path . '/' . $this->filename)) {
+			return 0;
+		}
 
 		// get the number of audio channels
 		$this->audio_channels = $this->get_audio_channels($this->path, $this->filename);
@@ -264,8 +304,8 @@ class transcribe_local implements transcribe_interface {
 			}
 
 			// save audio into segments
-			$command = "ffmpeg -y -ss {$start_time} -t {$segment_length} -i {$this->path}/{$this->filename} {$codec_parameter} {$this->temp_dir}/{$output_filename}";
-			// $command = "ffmpeg -y -threads 4 -ss ".$start_time." -t ".$segment_length." -i ".$this->path."/".$this->filename." -c ".$codec_parameter." ".$this->temp_dir."/".$output_filename;
+			$command = "ffmpeg -y -ss ".$start_time." -t ".$segment_length." -i ".escapeshellarg($this->path)."/".escapeshellarg($this->filename)." ".$codec_parameter." ".escapeshellarg($this->temp_dir)."/".escapeshellarg($output_filename);
+			// $command = "ffmpeg -y -threads 4 -ss ".$start_time." -t ".$segment_length." -i ".escapeshellarg($this->path)."/".escapeshellarg($this->filename)." -c ".$codec_parameter." ".escapeshellarg($this->temp_dir)."/".escapeshellarg($output_filename);
 			//echo $command."\n";
 			shell_exec($command);
 
@@ -282,7 +322,7 @@ class transcribe_local implements transcribe_interface {
 					$output_channel_filename = $file_base_name . ".segment." . ($i + 1) . ".channel." . $channel . "." . $file_extension;
 
 					// seperate the channels from the segment
-					$command = "ffmpeg -y -threads 4 -i " . $this->temp_dir . "/" . $output_filename . " -af \"pan=mono|c0=c" . $channel . "\" " . $this->temp_dir . "/" . $output_channel_filename;
+					$command = "ffmpeg -y -threads 4 -i " . escapeshellarg($this->temp_dir) . "/" . escapeshellarg($output_filename) . " -af \"pan=mono|c0=c" . $channel . "\" " . escapeshellarg($this->temp_dir) . "/" . escapeshellarg($output_channel_filename);
 					//echo $command."\n";
 					shell_exec($command);
 

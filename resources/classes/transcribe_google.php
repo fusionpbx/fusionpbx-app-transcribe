@@ -205,8 +205,8 @@ class transcribe_google implements transcribe_interface {
 				$audio_length = (float)system("soxi -D ".$this->path."/".$this->filename);
 
 				// Convert audio file to FLAC format
-				$flac_file = $this->path . '/' . $this->filename . '.flac';
-				$command = "sox ".$this->path."/".$this->filename." ".$flac_file;
+				$flac_file = escapeshellarg($this->path) . '/' . escapeshellarg($this->filename) . '.flac';
+				$command = "sox ".escapeshellarg($this->path)."/".escapeshellarg($this->filename)." ".$flac_file;
 				if ($audio_length > 59) { $command .= " trim 0 00:59"; }
 				exec($command);
 
