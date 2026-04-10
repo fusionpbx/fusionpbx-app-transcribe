@@ -18,5 +18,5 @@ php /var/www/fusionpbx/core/upgrade/upgrade.php
 - Set `transcribe -> engine -> text` to `togetherai`
 - Set `transcribe -> api_key -> text` to your Together AI API key
 - Optional: set `transcribe -> api_url -> text` to `https://api.together.xyz/v1/audio/transcriptions`
-- Optional: set `transcribe -> api_model -> text` to `openai/whisper-large-v3`
-- Optional: set `transcribe -> diarize -> boolean` to `true`
+- `openai/whisper-large-v3` is selected in the provider class
+- diarization is controlled in the provider class

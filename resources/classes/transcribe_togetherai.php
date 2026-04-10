@@ -35,8 +35,8 @@ class transcribe_togetherai implements transcribe_interface {
 	public function __construct($settings) {
 		$this->api_key = $settings->get('transcribe', 'api_key', '');
 		$this->api_url = $settings->get('transcribe', 'api_url', 'https://api.together.xyz/v1/audio/transcriptions');
-		$this->api_model = $settings->get('transcribe', 'api_model', 'openai/whisper-large-v3');
-		$this->diarize = $settings->get('transcribe', 'diarize', false);
+		$this->api_model = 'openai/whisper-large-v3';
+		$this->diarize = false;
 
 		if (file_exists('/dev/shm')) {
 			$this->temp_dir = '/dev/shm';
