@@ -76,6 +76,19 @@ class transcribe_queue_service extends service {
 
 		// Service work is handled here
 		while ($this->running) {
+
+			// Make sure the database connection is available
+			while (!$this->database->is_connected()) {
+				// Connect to the database
+				$this->database->connect();
+
+				// Reload settings after connection to the database
+				$this->settings = new settings(['database' => $this->database]);
+
+				// Sleep for a moment
+				sleep(1);
+			}
+
 			// Get the processing count from the transcribe queue
 			$sql = "select count(*) as count ";
 			$sql .= "from v_transcribe_queue ";
@@ -89,9 +102,9 @@ class transcribe_queue_service extends service {
 			// Send a message for debugging
 			$this->debug("Processing Count: ".$processing_count.", Limit: ".$this->limit);
 
-	        // Only proceed if we haven't reached the limit
-	        if ($processing_count < $this->limit) {
-	            // Get pending jobs from the transcribe queue
+			// Only proceed if we haven't reached the limit
+			if ($processing_count < $this->limit) {
+				// Get pending jobs from the transcribe queue
 				$sql = "select transcribe_queue_uuid ";
 				$sql .= "from v_transcribe_queue ";
 				$sql .= "where hostname = :hostname ";
