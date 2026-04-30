@@ -11,10 +11,15 @@ if (!class_exists('transcribe_queue')) {
 	class transcribe_queue {
 
 		/**
+		 * declare constant variables
+		 */
+		const app_name = 'transcribe_queue';
+		const app_uuid = '8da245ba-e559-4094-9862-4bfaf5cec713';
+		const app_category = 'queue';
+
+		/**
 		* declare the variables
 		*/
-		private $app_name;
-		private $app_uuid;
 		private $name;
 		private $table;
 		private $toggle_field;
@@ -26,8 +31,6 @@ if (!class_exists('transcribe_queue')) {
 		 */
 		public function __construct() {
 			//assign the variables
-				$this->app_name = 'transcribe_queue';
-				$this->app_uuid = '8da245ba-e559-4094-9862-4bfaf5cec713';
 				$this->name = 'transcribe_queue';
 				$this->table = 'transcribe_queue';
 				$this->toggle_field = '';
@@ -43,6 +46,15 @@ if (!class_exists('transcribe_queue')) {
 			foreach ($this as $key => $value) {
 				unset($this->$key);
 			}
+		}
+
+		/**
+		 * Get the category of this class.
+		 *
+		 * @return string The constant category value.
+		 */
+		public static function get_category(): string {
+			return self::app_category;
 		}
 
 		/**
@@ -82,8 +94,6 @@ if (!class_exists('transcribe_queue')) {
 							if (is_array($array) && @sizeof($array) != 0) {
 								//execute delete
 									$database = new database;
-									$database->app_name = $this->app_name;
-									$database->app_uuid = $this->app_uuid;
 									$database->delete($array);
 									unset($array);
 
@@ -151,8 +161,6 @@ if (!class_exists('transcribe_queue')) {
 							if (is_array($array) && @sizeof($array) != 0) {
 								//save the array
 									$database = new database;
-									$database->app_name = $this->app_name;
-									$database->app_uuid = $this->app_uuid;
 									$database->save($array);
 									unset($array);
 
@@ -220,8 +228,6 @@ if (!class_exists('transcribe_queue')) {
 							if (is_array($array) && @sizeof($array) != 0) {
 								//save the array
 									$database = new database;
-									$database->app_name = $this->app_name;
-									$database->app_uuid = $this->app_uuid;
 									$database->save($array);
 									unset($array);
 
