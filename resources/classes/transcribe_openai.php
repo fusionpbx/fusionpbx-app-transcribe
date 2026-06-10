@@ -416,9 +416,11 @@ class transcribe_openai implements transcribe_interface {
 			// }, $all_segments));
 
 			// sort the segments in ascending order
-			usort($all_segments['segments'], function ($a, $b) {
-				return $a['start'] <=> $b['start'];
-			});
+			if (!empty($all_segments['segments']) && is_array($all_segments['segments'])) {
+    				usort($all_segments['segments'], function ($a, $b) {
+        				return $a['start'] <=> $b['start'];
+    				});
+			}
 
 			// set the message to return all text
 			if ($output_type == 'text') {
