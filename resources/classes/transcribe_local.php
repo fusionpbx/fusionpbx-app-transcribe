@@ -226,7 +226,7 @@ class transcribe_local implements transcribe_interface {
 		}
 
 		// use ffmpeg to find the  leading silence
-		$command = "ffmpeg -i \"" . escapeshellarg($path) . "/" . escapeshellarg($filename) . "\" -af \"silencedetect=n=-50dB:d=0.5\" -f null - 2>&1 | grep \"silence_start\"";
+		$command = "ffmpeg -i " . escapeshellarg($path) . "/" . escapeshellarg($filename) . " -af \"silencedetect=n=-50dB:d=0.5\" -f null - 2>&1 | grep \"silence_start\"";
 		//echo $command."\n";
 		exec($command, $output);
 
