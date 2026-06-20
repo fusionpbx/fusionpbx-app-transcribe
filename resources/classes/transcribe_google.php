@@ -152,6 +152,8 @@ class transcribe_google implements transcribe_interface {
 
 	/**
 	 * transcribe - speech to text
+	 *
+	 * @return string the transcription or "false" if an error occurs
 	 */
 	public function transcribe() : string {
 
@@ -180,9 +182,15 @@ class transcribe_google implements transcribe_interface {
 		ob_start();
 		$out = fopen('php://output', 'w');
 
+		// ensure no errors for fopen
+		if (!$out) {
+			message::add('Error: unable to open output buffer', 'negative');
+			return "false";
+		}
+
 		// version 1
-		if (trim($this->api_url) == 'https://speech.googleapis.com/v1p1beta1/speech') {
-			if (isset($this->api_key) && $this->api_key != '') {
+		if (substr($this->api_url, 0, 43) == 'https://speech.googleapis.com/v1p1beta1/speech') {
+			if (!empty($this->api_key)) {
 
 				if (file_exists($this->path.'/'.$this->filename)) {
 					//file has been found
@@ -197,21 +205,15 @@ class transcribe_google implements transcribe_interface {
 					file_put_contents($this->path.'/'.$this->filename, $this->audio_string);
 				}
 				else {
+					// close the open handle
+					fclose($out);
 					//audio file or string not found
-					return false;
+					message::add('Error: audio file or string not found', 'negative');
+					return "false";
 				}
 
-				//get the length of the audio file
-				$audio_length = (float)system("soxi -D ".$this->path."/".$this->filename);
-
-				// Convert audio file to FLAC format
-				$flac_file = escapeshellarg($this->path) . '/' . escapeshellarg($this->filename) . '.flac';
-				$command = "sox ".escapeshellarg($this->path)."/".escapeshellarg($this->filename)." ".$flac_file;
-				if ($audio_length > 59) { $command .= " trim 0 00:59"; }
-				exec($command);
-
-				// Base64 encode FLAC file
-				$flac_base64 = base64_encode(file_get_contents($flac_file));
+				// Base64 encode file
+				$flac_base64 = base64_encode(file_get_contents($this->path."/".$this->filename));
 
 				// Prepare JSON data
 				$data = [
@@ -250,16 +252,22 @@ class transcribe_google implements transcribe_interface {
 
 				// check for errors
 				if (curl_errno($ch)) {
-					echo 'Error: ' . curl_error($ch);
-					exit;
+					// close the open handle
+					fclose($out);
+					message::add('Error: ' . curl_error($ch), 'negative');
+					return "false";
 				}
 
 				// close the handle
 				curl_close($ch);
 
 				// Remove temporary FLAC file
-				unlink($flac_file);
+				// unlink($flac_file);
 			}
+			// close the open handle
+			fclose($out);
+			message::add('Error: API key empty', 'negative');
+			return "false";
 		}
 
 		// version 2
@@ -277,8 +285,15 @@ class transcribe_google implements transcribe_interface {
 				$audio_base64 = base64_encode($this->audio_string);
 			}
 			else {
+				// unset the environment variable for application credentials before returning
+				if (!empty($this->application_credentials)) {
+					putenv("GOOGLE_APPLICATION_CREDENTIALS");
+				}
+				// close the open handle
+				fclose($out);
 				//audio file or string not found
-				return false;
+				message::add('Error: audio file or string not found', 'negative');
+				return "false";
 			}
 
 			// Prepare JSON data
@@ -319,20 +334,34 @@ class transcribe_google implements transcribe_interface {
 
 			// check for errors
 			if (curl_errno($ch)) {
-				echo 'Error: ' . curl_error($ch);
-				exit;
+				// unset the environment variable for application credentials before returning
+				if (!empty($this->application_credentials)) {
+					putenv("GOOGLE_APPLICATION_CREDENTIALS");
+				}
+				// close the open handle
+				fclose($out);
+				message::add('Error: ' . curl_error($ch), 'negative');
+				return "false";
 			}
 
 			// close the handle
 			curl_close($ch);
 		}
 
+		// close the open handle
+		fclose($out);
+		// $this->debug = ob_get_clean();
+
 		// validate the json
 		if (!empty($response)) {
 			$ob = json_decode($response);
 			if($ob === null) {
-				echo "invalid json\n";
-				return false;
+				// unset the environment variable for application credentials before returning
+				if (!empty($this->application_credentials)) {
+					putenv("GOOGLE_APPLICATION_CREDENTIALS");
+				}
+				message::add('Error: invalid json', 'negative');
+				return "false";
 			}
 
 			$json = json_decode($response, true);
@@ -343,9 +372,10 @@ class transcribe_google implements transcribe_interface {
 			}
 		}
 
-		// show the debug information
-		fclose($out);
-		// $this->debug = ob_get_clean();
+		// unset the environment variable for application credentials before returning
+		if (!empty($this->application_credentials)) {
+			putenv("GOOGLE_APPLICATION_CREDENTIALS");
+		}
 
 		// return the transcription
 		if (empty($this->message)) {
