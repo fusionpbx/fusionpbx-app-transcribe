@@ -269,6 +269,11 @@ class transcribe_local implements transcribe_interface {
 		// get the duration of the audio file
 		$this->audio_duration = $this->get_audio_duration($this->path, $this->filename);
 
+		// audio duration is too short
+		if ($this->audio_duration < 2) {
+			return 0;
+		}
+
 		// define the array
 		$transcribe_array = [];
 
@@ -394,9 +399,11 @@ class transcribe_local implements transcribe_interface {
 			// }, $all_segments));
 
 			// sort the segments in ascending order
-			usort($all_segments['segments'], function ($a, $b) {
-				return $a['start'] <=> $b['start'];
-			});
+			if (!empty($all_segments['segments']) && is_array($all_segments['segments'])) {
+				usort($all_segments['segments'], function ($a, $b) {
+					return $a['start'] <=> $b['start'];
+				});
+			}
 
 			// set the message to return all text
 			if ($output_type == 'text') {
