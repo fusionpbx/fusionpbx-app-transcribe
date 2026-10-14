@@ -36,7 +36,7 @@ class transcribe_openai implements transcribe_interface {
 		// build the setting object and get the recording path
 		$this->api_key = $settings->get('transcribe', 'api_key', '');
 		$this->api_url = $settings->get('transcribe', 'api_url', 'https://api.openai.com/v1/audio/transcriptions');
-		$this->api_model = $settings->get('transcribe', 'api_model', 'whisper-1');
+		$this->api_model = $settings->get('transcribe', 'api_model', 'gpt-transcribe');
 		$this->diarize = $settings->get('transcribe', 'diarize', false);
 
 		// get the temp directory
@@ -92,6 +92,44 @@ class transcribe_openai implements transcribe_interface {
 	public function is_translate_enabled() : bool {
 		// return the whether engine is able to translate
 		return false;
+	}
+
+	/**
+	 * is_gpt_model - check whether the model is a gpt transcription model
+	 * gpt models (gpt-transcribe, gpt-transcribe-1, gpt-4o-transcribe, gpt-4o-mini-transcribe)
+	 * return a JSON object with a top-level text field (no segments) and do not support
+	 * response_format, language or chunking_strategy
+	 */
+	public function is_gpt_model() : bool {
+		return stripos($this->api_model, 'gpt-') === 0;
+	}
+
+	/**
+	 * build_text_segment - create a single segment from a text-only response
+	 * gpt models (and some proxies) return one text blob with no per-utterance
+	 * segments, so a single segment spanning the chunk is created to preserve
+	 * the segments contract used by the rest of the application
+	 *
+	 * @param array $row the transcribe result row (segment_id, segment_length, ...)
+	 * @param string $text the transcribed text
+	 *
+	 * @return array an array with a single segment, or empty when the text is blank
+	 */
+	private function build_text_segment(array $row, string $text) : array {
+		// ignore blank transcripts
+		$text = trim($text);
+		if ($text === '') {
+			return [];
+		}
+
+		// set the end time to the duration of the chunk
+		$chunk_duration = 0;
+		if (isset($row['segment_id']) && isset($row['segment_length'])) {
+			$chunk_duration = min($row['segment_length'], max($this->audio_duration - ($row['segment_id'] * $row['segment_length']), 0));
+		}
+
+		// build a single segment covering the chunk
+		return [['start' => 0, 'end' => $chunk_duration, 'text' => $text]];
 	}
 
 	public function get_languages() : array {
@@ -275,12 +313,21 @@ class transcribe_openai implements transcribe_interface {
 			return 0;
 		}
 
+		// use whisper-1 for multi-channel audio so speaker diarization is available
+		// (the gpt transcription models do not support the diarized_json response format)
+		if ($this->audio_channels > 1) {
+			$this->api_model = 'whisper-1';
+		}
+
 		// define the array
 		$transcribe_array = [];
 
 		// segment the audio if needed and then send a request for each segment
 		$segment_length = 900; // 1200 = 20 minutes in seconds
 		$total_segments = ceil($this->audio_duration / $segment_length);
+
+		// diarized_json is only supported by whisper-1, gpt models fall back to the per-channel processing
+		$diarize_enabled = $this->diarize && !$this->is_gpt_model();
 
 		// process each segment and return the result in the message array
 		for ($i = 0; $i < $total_segments; $i++) {
@@ -314,14 +361,14 @@ class transcribe_openai implements transcribe_interface {
 			//echo $command."\n";
 			shell_exec($command);
 
-			// single channel process once or if diarize is enabled
-			if ($this->audio_channels == 1 || $this->diarize) {
+			// single channel process once or if diarize is enabled (whisper-1 only)
+			if ($this->audio_channels == 1 || $diarize_enabled) {
 				// call the send_request function with the filename of each segment
-				$transcribe_array[] = array('channel' => $channel, 'segment_id' => $i, 'segment_length' => $segment_length, 'text' => $this->send_request($this->temp_dir, $output_filename));
+				$transcribe_array[] = array('channel' => '0', 'segment_id' => $i, 'segment_length' => $segment_length, 'text' => $this->send_request($this->temp_dir, $output_filename));
 			}
 
 			// multiple channels process each one in a loop
-			if ($this->audio_channels > 1 && !$this->diarize) {
+			if ($this->audio_channels > 1 && !$diarize_enabled) {
 				for ($channel = 0; $channel < $this->audio_channels; $channel++) {
 					// set the channel filename
 					$output_channel_filename = $file_base_name . ".segment." . ($i + 1) . ".channel." . $channel . "." . $file_extension;
@@ -368,25 +415,47 @@ class transcribe_openai implements transcribe_interface {
 				$transcript = json_decode($row[$content_key], true);
 
 				// check for errors in the transcript array
-				if (isset($transcript['error'])) {
-					print_r($transcript);
-					return false;
+				if (is_array($transcript)) {
+					if (isset($transcript['error'])) {
+						print_r($transcript);
+						return false;
+					}
+					// whisper models return a segments array with per-utterance timing
+					if (isset($transcript['segments'])) {
+						$segments = $transcript['segments'];
+					}
+					// gpt models return a single top-level text field with no segments
+					elseif (isset($transcript['text'])) {
+						$segments = $this->build_text_segment($row, $transcript['text']);
+					}
+					else {
+						$segments = [];
+					}
+				}
+				else {
+					// plain text response, create a single segment covering the chunk
+					$segments = $this->build_text_segment($row, (string)$row[$content_key]);
 				}
 
 				// merge segments
-				foreach ($transcript['segments'] as $segment) {
+				foreach ($segments as $segment) {
 
 					//calculate the start and stop time
 					if (isset($row['segment_id']) && isset($row['segment_length'])) {
-						$segment['start'] = $segment['start'] + $row['audio_start_time'] + ($row['segment_id'] * $row['segment_length']);
-						$segment['end'] = $segment['end'] + $row['audio_start_time'] + ($row['segment_id'] * $row['segment_length']);
+						$offset = (float)($row['audio_start_time'] ?? 0) + ($row['segment_id'] * $row['segment_length']);
+						$segment['start'] = ($segment['start'] ?? 0) + $offset;
+						$segment['end'] = ($segment['end'] ?? 0) + $offset;
+					}
+					else {
+						$segment['start'] = $segment['start'] ?? 0;
+						$segment['end'] = $segment['end'] ?? 0;
 					}
 
 					//set the speaker for diarization to a number
 					if ($this->diarize) {
-						if ($segment['speaker'] == 'A') {
+						if (($segment['speaker'] ?? '') == 'A') {
 							$segment['channel'] = '0';
-						} else if ($segment['speaker'] == 'B') {
+						} else if (($segment['speaker'] ?? '') == 'B') {
 							$segment['channel'] = '1';
 						}
 					}
@@ -398,6 +467,10 @@ class transcribe_openai implements transcribe_interface {
 							$segment['channel'] = $row['channel'];
 						}
 					}
+
+					// ensure the channel and speaker keys exist (gpt models do not return a speaker)
+					$segment['channel'] = $segment['channel'] ?? $segment['speaker'] ?? '0';
+					$segment['speaker'] = $segment['speaker'] ?? $segment['channel'];
 
 					// add keys values to the array
 					$array = [];
@@ -455,11 +528,12 @@ class transcribe_openai implements transcribe_interface {
 		// echo " --header 'Authorization: Bearer ".$this->api_key."' \n";
 		// echo " --header 'Content-Type: multipart/form-data' \n";
 		// echo " --form 'file=@".$path.'/'.$filename."' \n";
-		// echo " --form 'model=whisper-1' \n";
+		// echo " --form 'model=gpt-transcribe' \n";
 		// echo " --form 'response_format=text' \n";
 		// echo "\n";
 
-		// start output buffer
+		// start an output buffer to capture the curl verbose debug output
+		$ob_level = ob_get_level();
 		ob_start();
 		$out = fopen('php://output', 'w');
 
@@ -479,6 +553,67 @@ class transcribe_openai implements transcribe_interface {
 
 		// add the request headers
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+		// prepare and send the http post data
+		$post_data = $this->build_post_data($path, $filename);
+		if ($post_data === false) {
+			return false;
+		}
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+
+		// return the response as a string instead of outputting it directly
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+		// set the connection timeout and the overall maximum curl run time
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 4500);
+
+		// follow any "Location: " header the server sends as part of the HTTP header.
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+
+		// automatically set the Referer: field in requests where it follows a Location: redirect.
+		curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
+
+		// set whether to verify SSL peer
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, TRUE);
+
+		// add verbose for debugging
+		curl_setopt($ch, CURLOPT_VERBOSE, true);
+		curl_setopt($ch, CURLOPT_STDERR, $out);
+
+		// run the curl request and transcription message
+		$message = curl_exec($ch);
+
+		// close the output handle
+		fclose($out);
+
+		// discard the captured verbose output (it contains the Authorization
+		// header with the API key) so it is never leaked to the response/logs
+		if (ob_get_level() > $ob_level) {
+			ob_end_clean();
+		}
+
+		// check for errors
+		if (curl_errno($ch)) {
+			return 'Error: ' . curl_error($ch);
+		}
+
+		// close the handle
+		unset($ch);
+
+		// return the result from the request
+		return $message;
+	}
+
+	/**
+	 * build_post_data - prepare the http post data for the transcription request
+	 *
+	 * @param string $path path of the audio file
+	 * @param string $filename name of the audio file
+	 *
+	 * @return array|false the post data or false if no audio was found
+	 */
+	protected function build_post_data(string $path, string $filename) {
 
 		// prepare the HTTP POST data
 		if (file_exists($path.'/'.$filename)) {
@@ -508,56 +643,22 @@ class transcribe_openai implements transcribe_interface {
 			return false;
 		}
 
-		// prepare and send the http post data
+		// set the model to use
 		$post_data['model'] = $this->api_model;
-		if ($this->audio_channels == 1) {
-			$post_data['response_format'] = 'text';
+
+		// gpt models return a JSON object with a top-level text field and do not support response_format or chunking_strategy
+		if ($this->is_gpt_model()) {
+			// do not set the response format
 		}
-		if ($this->audio_channels > 1 && $this->diarize) {
+		elseif ($this->audio_channels > 1 && $this->diarize) {
 			$post_data['response_format'] = 'diarized_json';
 			$post_data['chunking_strategy'] = 'auto';
 		}
 		else {
 			$post_data['response_format'] = 'verbose_json';
 		}
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
 
-		// return the response as a string instead of outputting it directly
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-		// set the connection timeout and the overall maximum curl run time
-		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 4500);
-
-		// follow any "Location: " header the server sends as part of the HTTP header.
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-
-		// automatically set the Referer: field in requests where it follows a Location: redirect.
-		curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
-
-		// set whether to verify SSL peer
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, TRUE);
-
-		// add verbose for debugging
-		curl_setopt($ch, CURLOPT_VERBOSE, true);
-		curl_setopt($ch, CURLOPT_STDERR, $out);
-
-		// run the curl request and transcription message
-		$message = curl_exec($ch);
-
-		// show the debug information
-		fclose($out);
-
-		// check for errors
-		if (curl_errno($ch)) {
-			return 'Error: ' . curl_error($ch);
-		}
-
-		// close the handle
-		unset($ch);
-
-		// return the result from the request
-		return $message;
+		return $post_data;
 	}
 
 	public function set_model(string $model): void {
@@ -568,7 +669,11 @@ class transcribe_openai implements transcribe_interface {
 
 	public function get_models(): array {
 		return [
-			'tts-1-hd' => 'tts-1-hd'
+			'whisper-1' => 'whisper-1',
+			'gpt-4o-transcribe' => 'gpt-4o-transcribe',
+			'gpt-4o-mini-transcribe' => 'gpt-4o-mini-transcribe',
+			'gpt-transcribe' => 'gpt-transcribe',
+			'gpt-transcribe-1' => 'gpt-transcribe-1'
 		];
 	}
 
