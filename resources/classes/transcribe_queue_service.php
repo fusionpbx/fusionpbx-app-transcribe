@@ -162,7 +162,7 @@ class transcribe_queue_service extends service {
 
 							// Build the process command
 							$command = PHP_BINARY." ".dirname(__DIR__, 4)."/app/transcribe/resources/jobs/process.php ";
-							$command .= "'action=send&transcribe_queue_uuid=".$uuid."&hostname=".$host."'";
+							$command .= escapeshellarg('action=send&transcribe_queue_uuid='.$uuid.'&hostname='.$host);
 							$this->notice("command: " . $command);
 							if (parent::$log_level == 7) {
 								// Run process inline to see debug info
