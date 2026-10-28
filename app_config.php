@@ -48,7 +48,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "openai";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Speech to Text API engine.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Speech to Text API engine. Options: openai, inworld, local, parakeet, azure, google, watson";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "7883f9fc-9259-4f9b-a73d-532f44db2a28";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
@@ -65,6 +65,14 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Speech to Text API URL.";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "f2a7c1d3-9e45-4b8a-a6c2-7d3e5f1b9c08";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "api_model";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "parakeet-tdt-0.6b-v3";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Speech to Text API model. (parakeet: parakeet-tdt-0.6b-v3 multilingual, parakeet-unified-en-0.6b English).";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "b9a4873b-c3f0-47c8-9d70-cf1486064dce";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
@@ -89,6 +97,22 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Save the Transcribe response in the transcribe queue. Use this for debugging the transcribe response.";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "80a12c82-9836-49cb-9e1f-363240411fd3";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "timestamps";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Enable word-level timestamps in the transcription response (used by the parakeet engine).";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "d5e8f5cd-8713-4002-bd1a-1634e6bd3fb9";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "transcribe";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "language";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Speech to Text language (ISO 639-1 code, for example en, de, fr). Leave empty for automatic language detection (parakeet multilingual model).";
 		$y++;
 
 	//transcribe queue

@@ -1,6 +1,6 @@
 # fusionpbx-app-transcribe
 
-Speech to Text (STT) for FusionPBX. Convert call recordings, voicemails, and other audio into text using a pluggable set of transcription engines (OpenAI, Inworld, local Whisper, Azure, Google, Watson).
+Speech to Text (STT) for FusionPBX. Convert call recordings, voicemails, and other audio into text using a pluggable set of transcription engines (OpenAI, Inworld, local Whisper, Parakeet, Azure, Google, Watson).
 
 ## Features
 - Pluggable engines — pick a provider in the settings and the code loads `transcribe_<engine>` automatically.
@@ -33,10 +33,10 @@ Open **Menu → Default Settings** and select the **transcribe** category (or se
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `enabled` | boolean | `true` | Master switch for speech-to-text. |
-| `engine` | text | `openai` | Provider to use: `openai`, `inworld`, `local`, `azure`, `google`, `watson`. |
+| `engine` | text | `openai` | Provider to use: `openai`, `inworld`, `local`, `parakeet`, `azure`, `google`, `watson`. |
 | `api_key` | text | — | API key / credential for the provider. |
 | `api_url` | text | — | Provider endpoint. See the provider notes below for the expected value. (optional) |
-| `api_model` | text | `gpt-transcribe` | Model to request. (optional) |
+| `api_model` | text | engine-specific | Model to request. (optional; for example `gpt-transcribe` for OpenAI, `parakeet-tdt-0.6b-v3` for Parakeet.) |
 | `limit` | numeric | `3` | Maximum number of queue jobs to run concurrently. |
 | `interval` | numeric | `1` | Seconds between queue polls. |
 | `save_response` | boolean | `false` | Store the raw transcription response in the queue row (useful for debugging). |
@@ -46,7 +46,8 @@ Additional settings read by specific engines (add them under the `transcribe` ca
 | Setting | Default | Used by | Description |
 |---|---|---|---|
 | `diarize` | `false` | openai, inworld | Request speaker diarization for multi-channel audio. |
-| `sample_rate` | `16000` | inworld | Sample rate (Hz) to resample audio to. |
+| `timestamps` | `true` | parakeet | Request word-level timestamps in the response (each segment then carries a `words` array with per-word start/end). |
+| `sample_rate` | `16000` | inworld, parakeet | Sample rate (Hz) to resample audio to before upload. |
 | `stale_timeout` | `3600` | queue service | Seconds before a stuck `processing` job is reset to `pending`. |
 
 > **Note:** The settings loader resolves one row per subcategory. If a subcategory (for example `api_key`) has more than one enabled row, the last one loaded can win. Avoid duplicate rows, and remember that PHP-FPM with APCu may serve cached settings briefly after a database-only change.
@@ -127,6 +128,17 @@ Set `transcribe.engine` to one of the values below. Each provider class lives in
 - **Default model:** `whisper-1`.
 - Points at any local, OpenAI-compatible Whisper HTTP server (for example a `faster-whisper`, `whisper.cpp`, or `whisperX` HTTP wrapper). Audio is uploaded as `multipart/form-data`; `response_format` is `text` for mono and `json` for multi-channel.
 - **Settings:** `api_key`, `api_url`, `api_model`.
+
+### Parakeet (`engine = parakeet`)
+- **Default URL:** `http://127.0.0.1:8000/transcribe`
+- **Auth:** none by default (set `api_key` and it is sent as `Authorization: Bearer`).
+- **Default model:** `parakeet-tdt-0.6b-v3` — multilingual (25 European languages), automatically detects the language of the audio, and adds punctuation and capitalization. `parakeet-unified-en-0.6b` (English only) is also available as a fallback/comparison model.
+- Points at a self-hosted Parakeet (NVIDIA NeMo) service, for example the Flask app in the `parakeet` project that serves `model.transcribe()` over `POST /transcribe` (`multipart/form-data` with a `file` field). The service loads both models, selects one with the `model` form field (the v3 model is the default), rejects unknown models, and `GET /models` lists the available models.
+- **Languages:** the v3 model covers 25 European languages (`bg cs da de el en es et fi fr hr hu it lt lv mt nl pl pt ro ru sk sl sv uk`) and detects the language automatically, so no per-recording language selection is needed. `language` (ISO 639-1 code) can still be set as an optional hint — it is sent to the service, the model decides from the audio. CJK and other non-European languages are not covered by this checkpoint.
+- **Audio:** the Parakeet/NeMo model only accepts **16 kHz mono PCM WAV** (an 8 kHz stereo telephony mp3 is rejected with an input-shape error), so every segment is converted with ffmpeg (`-ac 1 -ar <sample_rate> -acodec pcm_s16le`) before upload.
+- **Word-level timestamps:** with `timestamps` enabled the service is asked for word timing (`timestamps=true` form field) and responds with `{"text": "...", "words": [{"word","start","end"}]}`. The words are grouped into the standard segments (new segment on a pause over ~1 s or at the end of a sentence), so every segment — single-channel voicemails as well as each channel of a call recording — carries a `words` array with per-word start/end times in addition to the usual `start`/`end`/`text`/`speaker` fields.
+- **Behavior:** single-channel audio (voicemails) is transcribed directly; multi-channel audio (call recordings) is split per channel with ffmpeg, each channel is transcribed with word timestamps, and the channels are merged and interleaved by start time.
+- **Settings:** `api_key`, `api_url`, `api_model`, `language`, `timestamps`, `sample_rate`.
 
 ### Azure (`engine = azure`)
 - **URL:** set `api_url` to the Azure region (for example `westeurope`). The code builds the Cognitive Services token endpoint and the conversation-recognition endpoint from it.
