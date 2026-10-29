@@ -94,6 +94,10 @@ class transcribe_parakeet implements transcribe_interface {
 		$this->format = $audio_format;
 	}
 
+	public function set_language(string $audio_language) {
+		$this->language = $audio_language;
+	}
+
 	public function set_translate(string $audio_translate) {
 		$this->translate = $audio_translate;
 	}
