@@ -189,7 +189,7 @@ class transcribe_google implements transcribe_interface {
 		}
 
 		// version 1
-		if (substr($this->api_url, 0, 43) == 'https://speech.googleapis.com/v1p1beta1/speech') {
+		if (str_starts_with($this->api_url, 'https://speech.googleapis.com/v1p1beta1/speech')) {
 			if (!empty($this->api_key)) {
 
 				if (file_exists($this->path.'/'.$this->filename)) {
@@ -213,7 +213,19 @@ class transcribe_google implements transcribe_interface {
 				}
 
 				// Base64 encode file
-				$flac_base64 = base64_encode(file_get_contents($this->path."/".$this->filename));
+				$audio_file = $this->path.'/'.$this->filename;
+				$flac_file = sys_get_temp_dir().'/transcribe_google_'.bin2hex(random_bytes(8)).'.flac';
+				$audio_length = (float)trim((string)shell_exec('soxi -D '.escapeshellarg($audio_file).' 2>/dev/null'));
+				$command = 'sox '.escapeshellarg($audio_file).' '.escapeshellarg($flac_file);
+				if ($audio_length > 59) { $command .= ' trim 0 00:59'; }
+				$sox_output = [];
+				$sox_result = 1;
+				exec($command.' 2>&1', $sox_output, $sox_result);
+				if ($sox_result === 0 && file_exists($flac_file) && filesize($flac_file) > 0) {
+					$flac_base64 = base64_encode(file_get_contents($flac_file));
+				} else {
+					$flac_base64 = base64_encode(file_get_contents($audio_file));
+				}
 
 				// Prepare JSON data
 				$data = [
@@ -221,7 +233,7 @@ class transcribe_google implements transcribe_interface {
 						'languageCode' => $this->language,
 						'enableWordTimeOffsets' => false,
 						'enableAutomaticPunctuation' => true,
-						'alternativeLanguageCodes' => $this->alternate_language
+						'alternativeLanguageCodes' => [$this->alternate_language]
 					],
 					'audio' => [
 						'content' => $flac_base64
@@ -252,6 +264,7 @@ class transcribe_google implements transcribe_interface {
 
 				// check for errors
 				if (curl_errno($ch)) {
+					if (file_exists($flac_file)) { unlink($flac_file); }
 					// close the open handle
 					fclose($out);
 					message::add('Error: ' . curl_error($ch), 'negative');
@@ -262,12 +275,14 @@ class transcribe_google implements transcribe_interface {
 				curl_close($ch);
 
 				// Remove temporary FLAC file
-				// unlink($flac_file);
+				if (file_exists($flac_file)) { unlink($flac_file); }
+				
+			} else {
+				// close the open handle
+				fclose($out);
+				message::add('Error: API key empty', 'negative');
+				return "false";
 			}
-			// close the open handle
-			fclose($out);
-			message::add('Error: API key empty', 'negative');
-			return "false";
 		}
 
 		// version 2
