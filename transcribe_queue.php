@@ -108,24 +108,34 @@
 		exit;
 	}
 
-//get order and order by
-	$order_by = $_GET["order_by"] ?? 'u.insert_date';
-	$order = $_GET["order"] ?? 'desc';
+//set variables from the GET parameters
+	$page = is_numeric($_GET['page'] ?? '') ? $_GET['page'] : 0;
+	$order_by = preg_replace('#[^a-zA-Z0-9_\-]#', '', $_GET['order_by'] ?? '');
+	$order = ($_GET['order'] ?? '') === 'asc' ? 'asc' : 'desc';
+	$search = is_string($_GET['search'] ?? null) ? strtolower($_GET['search']) : '';
+	$show = $_GET['show'] ?? '';
 
 //define the variables
-	$search = '';
-	$show = '';
 	$list_row_url = '';
 
-//add the search variable
-	if (!empty($_GET["search"])) {
-		$search = strtolower($_GET["search"]);
+//build the query string
+	$param = [];
+	if (!empty($page)) {
+		$param['page'] = $page;
 	}
-
-//add the show variable
-	if (!empty($_GET["show"])) {
-		$show = $_GET["show"];
+	if (!empty($_GET['order_by'])) {
+		$param['order_by'] = $order_by;
 	}
+	if (!empty($_GET['order'])) {
+		$param['order'] = $order;
+	}
+	if (!empty($search)) {
+		$param['search'] = $search;
+	}
+	if (!empty($show) && $show == 'all' && permission_exists('transcribe_queue_all')) {
+		$param['show'] = $show;
+	}
+	$query_string = http_build_query($param);
 
 //set the time zone
 	$time_zone = $settings->get('domain', 'time_zone', date_default_timezone_get());
@@ -154,11 +164,8 @@
 
 //prepare to page the results
 	$rows_per_page = $settings->get('domain', 'paging', 50);
-	$param = !empty($search) ? "&search=".$search : null;
-	$param .= (!empty($_GET['page']) && $show == 'all' && permission_exists('transcribe_queue_all')) ? "&show=all" : null;
-	$page = !empty($_GET['page']) && is_numeric($_GET['page']) ? $_GET['page'] : 0;
-	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
-	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
+	list($paging_controls, $rows_per_page) = paging($num_rows, $query_string, $rows_per_page);
+	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $query_string, $rows_per_page, true);
 	$offset = $rows_per_page * $page;
 
 //get the list
@@ -192,7 +199,7 @@
 		$parameters['search'] = '%'.$search.'%';
 	}
 	$sql .= "and u.domain_uuid = d.domain_uuid ";
-	$sql .= order_by($order_by, $order, '', '');
+	$sql .= order_by($order_by, $order, 'u.insert_date', 'desc');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$parameters['time_zone'] = $time_zone;
 	$transcribe_queue = $database->select($sql, $parameters ?? null, 'all');
@@ -220,13 +227,13 @@
 		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$settings->get('theme', 'button_icon_delete'),'id'=>'btn_delete','name'=>'btn_delete','style'=>'display:none;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
-	if (permission_exists('transcribe_queue_all')) {
-		if ($show == 'all') {
-			echo "		<input type='hidden' name='show' value='all'>\n";
+	foreach ($param as $key => $value) {
+		if (in_array($key, ['order_by', 'order', 'show'])) {
+			echo "		<input type='hidden' name='".escape($key)."' value='".escape($value)."' />\n";
 		}
-		else {
-			echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$settings->get('theme', 'button_icon_all'),'link'=>'?show=all&search='.$search]);
-		}
+	}
+	if ($show !== 'all' && permission_exists('transcribe_queue_all')) {
+		echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$settings->get('theme', 'button_icon_all'),'link'=>'?show=all']);
 	}
 	echo 		"<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
 	echo button::create(['label'=>$text['button-search'],'icon'=>$settings->get('theme', 'button_icon_search'),'type'=>'submit','id'=>'btn_search']);
@@ -260,7 +267,7 @@
 		echo "	</th>\n";
 	}
 	if ($show == 'all' && permission_exists('transcribe_queue_all')) {
-		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
+		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order, null, null, $param);
 	}
 	echo "<th class=''>".$text['label-date']."</th>\n";
 	echo "<th class='hide-md-dn'>".$text['label-time']."</th>\n";
@@ -268,7 +275,7 @@
 	echo "<th class='hide-md-dn'>".$text['label-transcribe_application_name']."</th>\n";
 	//echo th_order_by('transcribe_application_name', $text['label-transcribe_application_name'], $order_by, $order);
 	echo "<th class=''>".$text['label-transcribe_duration']."</th>\n";
-	echo th_order_by('transcribe_status', $text['label-transcribe_status'], $order_by, $order);
+	echo th_order_by('transcribe_status', $text['label-transcribe_status'], $order_by, $order, null, null, $param);
 	//echo th_order_by('transcribe_target_table', $text['label-transcribe_target_table'], $order_by, $order);
 	//echo th_order_by('transcribe_target_key_name', $text['label-transcribe_target_key_name'], $order_by, $order);
 	//echo th_order_by('transcribe_target_column_name', $text['label-transcribe_target_column_name'], $order_by, $order);
