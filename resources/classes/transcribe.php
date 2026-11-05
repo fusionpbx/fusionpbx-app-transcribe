@@ -85,13 +85,9 @@ class transcribe {
 	}
 
 	/**
-	 * transcribe - convert the transcription into a conversation
+	 * conversation_format - convert the transcription into a conversation
 	 */
 	static function conversation_format($transcription = '', $type = 'html') {
-		global $text;
-
-		$text['label-speaker'] = 'Speaker';
-
 		//if the transcription is empty return an empty string
 		if (empty($transcription)) {
 			return '';
@@ -99,19 +95,40 @@ class transcribe {
 
 		//decode transcription json text
 		$transcribe_array = json_decode($transcription, true);
+		if (!is_array($transcribe_array)) {
+			return '';
+		}
+
+		return self::render_conversation($transcribe_array['segments'] ?? [], $type);
+	}
+
+	/**
+	 * render_conversation - convert the transcription segments into a conversation
+	 */
+	static function render_conversation($segments = [], $type = 'html') {
+		global $text;
+
+		$text['label-speaker'] = 'Speaker';
+
+		//if the transcription is empty return an empty string
+		if (empty($segments) || !is_array($segments)) {
+			return '';
+		}
 
 		if ($type == 'html') {
 			$response = '';
 			$previous_speaker = '';
 			$i = 0;
-			foreach ($transcribe_array['segments'] as $row) {
+			//normalize the speaker to a string
+			foreach ($segments as $row) {
+				$row['speaker'] = strval($row['speaker'] ?? '');
 				if ($previous_speaker != $row['speaker']) {
 					if ($i > 0) { $response .= "</div>\n"; }
 					$speaker_class = $row['speaker'] === '0' ? 'message-bubble-em' : 'message-bubble-me';
 					$response .= "<div class='message-bubble {$speaker_class}'>";
-					$response .= "<div ><strong>" . $text['label-speaker'] . " " . $row['speaker'] . "</strong></div>\n";
+					$response .= "<div ><strong>" . $text['label-speaker'] . " " . escape($row['speaker']) . "</strong></div>\n";
 				}
-				//$html .= "	<span class='time'>".round($row['start'])."</span>";
+				//$response .= "	<span class='time'>".round($row['start'])."</span>";
 				$response .= "".escape(trim($row['text']))." ";
 				if ($previous_speaker != $row['speaker']) {
 					$previous_speaker = $row['speaker'];
@@ -127,10 +144,12 @@ class transcribe {
 			$response = '';
 			$previous_speaker = '';
 			$i = 0;
-			foreach ($transcribe_array['segments'] as $row) {
+			//normalize the speaker to a string
+			foreach ($segments as $row) {
+				$row['speaker'] = strval($row['speaker'] ?? '');
 				if ($previous_speaker != $row['speaker']) {
 					if ($i > 0) { $response .= "\n"; }
-					$response .= "\n" . $text['label-speaker'] . " " . $row['speaker'] . "\n";
+					$response .= "\n" . $text['label-speaker'] . " " . escape($row['speaker']) . "\n";
 				}
 				$response .= "".escape(trim($row['text']))." ";
 				if ($previous_speaker != $row['speaker']) {
@@ -139,8 +158,9 @@ class transcribe {
 				$i++;
 			}
 
-			$response .= "</div>\n";
 			return $response;
 		}
+
+		return '';
 	}
 }
