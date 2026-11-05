@@ -74,7 +74,7 @@
 
 //make sure the /var/run/fusionpbx directory exists
 	if (!file_exists('/var/run/fusionpbx')) {
-		$result = mkdir('/var/run/fusionpbx', 0777, true);
+		$result = mkdir('/var/run/fusionpbx', 0755, true);
 		if (!$result) {
 			die('Failed to create /var/run/fusionpbx');
 		}
